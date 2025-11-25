@@ -570,6 +570,8 @@ article-expression-lang/
 
 Each article has a dedicated branch so readers can follow the progression:
 
+**Final Branch Names** (rename before publication):
+
 | Branch | Article | State |
 |--------|---------|-------|
 | `article-1-immutability-gap` | Article 1 | Problem demonstration, no optics yet |
@@ -578,6 +580,17 @@ Each article has a dedicated branch so readers can follow the progression:
 | `article-4-traversals-rewrites` | Article 4 | Extended AST, traversals, optimization passes |
 | `article-5-effects-free-dsl` | Article 5 | Type checker, interpreter, Free monad DSL |
 | `article-6-retrospective` | Article 6 | Final polished version, all features |
+
+**Current Development Branches** (with session suffix):
+
+| Development Branch | Maps To |
+|-------------------|---------|
+| `claude/article-1-immutability-gap-01SYiUKKHetQAj67PqZTDBws` | article-1 |
+| `claude/article-2-optics-fundamentals-01SYiUKKHetQAj67PqZTDBws` | article-2 |
+| `claude/article-3-ast-basic-optics-01SYiUKKHetQAj67PqZTDBws` | article-3 |
+| `claude/article-4-traversals-rewrites-01SYiUKKHetQAj67PqZTDBws` | article-4 |
+| `claude/article-5-effects-free-dsl-01SYiUKKHetQAj67PqZTDBws` | article-5 |
+| `claude/article-6-retrospective-01SYiUKKHetQAj67PqZTDBws` | article-6 |
 
 **Branch Workflow**:
 - Each branch builds on the previous (article-2 branches from article-1, etc.)
