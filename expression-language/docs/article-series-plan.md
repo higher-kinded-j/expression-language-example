@@ -566,6 +566,29 @@ article-expression-lang/
 └── README.md          # Links to articles
 ```
 
+### Branch Strategy
+
+Each article has a dedicated branch so readers can follow the progression:
+
+| Branch | Article | State |
+|--------|---------|-------|
+| `article-1-immutability-gap` | Article 1 | Problem demonstration, no optics yet |
+| `article-2-optics-fundamentals` | Article 2 | Basic optics examples, setup complete |
+| `article-3-ast-basic-optics` | Article 3 | Minimal 4-variant AST with lenses/prisms |
+| `article-4-traversals-rewrites` | Article 4 | Extended AST, traversals, optimization passes |
+| `article-5-effects-free-dsl` | Article 5 | Type checker, interpreter, Free monad DSL |
+| `article-6-retrospective` | Article 6 | Final polished version, all features |
+
+**Branch Workflow**:
+- Each branch builds on the previous (article-2 branches from article-1, etc.)
+- `main` contains the final, complete implementation (same as article-6)
+- Readers can `git checkout article-3-ast-basic-optics` to see exactly what exists at that point
+- Each branch has a README section explaining what's new
+
+**Tagging Strategy**:
+- Tag each branch at article publication: `v1.0-article-1`, `v1.0-article-2`, etc.
+- Allows bug fixes on branches without breaking article references
+
 ### Code Style for Articles
 
 - Maximum 20 lines per snippet
