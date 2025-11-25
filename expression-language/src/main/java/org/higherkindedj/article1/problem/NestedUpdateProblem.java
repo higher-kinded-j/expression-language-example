@@ -1,3 +1,5 @@
+// Copyright (c) 2025 Magnus Smith
+// Licensed under the MIT License. See LICENSE.md in the project root for license information.
 package org.higherkindedj.article1.problem;
 
 import java.util.ArrayList;
@@ -6,9 +8,8 @@ import java.util.List;
 /**
  * Demonstrates the "nested update problem" with Java records.
  *
- * <p>Pattern matching in Java 21+ excels at reading nested data,
- * but provides no help for writing. This class shows the painful
- * ceremony required to update deeply nested immutable structures.</p>
+ * <p>Pattern matching in Java 21+ excels at reading nested data, but provides no help for writing.
+ * This class shows the painful ceremony required to update deeply nested immutable structures.
  */
 public class NestedUpdateProblem {
 
