@@ -234,13 +234,19 @@ I strongly recommend **Option A** for these reasons:
    - Visual diagram of the hierarchy
    - When to use each (decision flowchart)
 
-6. **First Taste: A Simple Lens** (400 words)
+6. **Quick Win: Optics in 60 Seconds** (300 words)
+   - Before the theory: show the payoff immediately
+   - Side-by-side comparison: 15 lines manual vs. 1 line with optics
+   - Working code snippet readers can run
+   - "If this intrigues you, read on for the how and why"
+
+7. **First Taste: A Simple Lens** (400 words)
    - Higher-kinded-j `@GenerateLenses` annotation
    - Generated lens usage
    - Composition with `andThen()`
    - The "aha" moment: deep update in one line
 
-7. **What's Coming** (200 words)
+8. **What's Coming** (200 words)
    - Preview of the series
    - Introduce the expression language example
    - Promise: by the end, you'll never want to update nested data manually again
@@ -315,12 +321,23 @@ I strongly recommend **Option A** for these reasons:
    - Use cases: config expressions, rule engines, template systems
    - Design goals: type-safe, immutable, transformable
 
-2. **Designing the AST** (600 words)
+2. **Designing the AST: Start Simple** (700 words)
+   - **Pedagogical approach**: Start with minimal 4-variant AST, expand later
+   - Reduces cognitive load; readers see patterns before complexity
    - Core expression types (sealed interface hierarchy)
-   - Records for each variant
-   - Supporting types: Operator, Type, Binding
-   - Full code listing with annotations
 
+   **Phase 1 - Minimal AST (Article 3)**:
+   ```java
+   @GeneratePrisms
+   public sealed interface Expr {
+       @GenerateLenses record Literal(Object value) implements Expr {}
+       @GenerateLenses record Variable(String name) implements Expr {}
+       @GenerateLenses record Binary(Expr left, BinaryOp op, Expr right) implements Expr {}
+       @GenerateLenses record Conditional(Expr cond, Expr then_, Expr else_) implements Expr {}
+   }
+   ```
+
+   **Phase 2 - Extended AST (Article 4-5)**:
    ```java
    @GeneratePrisms
    public sealed interface Expr {
@@ -334,6 +351,8 @@ I strongly recommend **Option A** for these reasons:
        @GenerateLenses record Apply(Expr function, List<Expr> arguments) implements Expr {}
    }
    ```
+
+   - Supporting types: Operator, Type, Binding (introduced as needed)
 
 3. **Generated Optics Exploration** (500 words)
    - What `@GenerateLenses` produces
@@ -554,6 +573,45 @@ article-expression-lang/
 - Progressive reveal: simple first, then complete
 - Comments explain "why", not "what"
 - Imports shown once, then omitted
+
+### Error Handling Strategy
+
+Define how errors flow through the optics pipeline:
+
+1. **Parse Errors** → `Either<ParseError, Expr>` from parser
+2. **Type Errors** → `Validated<List<TypeError>, TypedExpr>` accumulates all issues
+3. **Runtime Errors** → `Either<RuntimeError, Value>` for evaluation failures
+
+**Key Pattern**: Use `Validated` for phases where multiple errors can be collected (type checking), `Either` for fail-fast phases (parsing, runtime).
+
+**Integration with Optics**:
+- `modifyF` with `Validated` enables error-accumulating traversals
+- Example: type-check all sub-expressions, collect ALL errors in one pass
+- Contrast with traditional visitor pattern that stops at first error
+
+### Parser Sketch
+
+While parsing is not the focus, provide a minimal parser for completeness:
+
+```java
+// Simple recursive descent parser for the expression language
+// Enables readers to run complete examples
+
+public sealed interface ParseResult<T> {
+    record Success<T>(T value, String remaining) implements ParseResult<T> {}
+    record Failure<T>(String error, int position) implements ParseResult<T> {}
+}
+
+public class ExprParser {
+    // Minimal implementation covering:
+    // - Literals: 42, true, "hello"
+    // - Variables: x, foo
+    // - Binary: a + b, x * y
+    // - Conditionals: if cond then a else b
+}
+```
+
+**Scope**: Parser is provided as utility, not explained in detail. Focus remains on optics.
 
 ### Diagrams to Create
 
