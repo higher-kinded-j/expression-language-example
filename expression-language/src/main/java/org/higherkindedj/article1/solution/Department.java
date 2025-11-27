@@ -13,7 +13,8 @@ public record Department(String name, Employee manager, List<Employee> staff) {
 
     public static Lens<Department, String> name() {
       return Lens.of(
-          Department::name, (newName, dept) -> new Department(newName, dept.manager(), dept.staff()));
+          Department::name,
+          (newName, dept) -> new Department(newName, dept.manager(), dept.staff()));
     }
 
     public static Lens<Department, Employee> manager() {

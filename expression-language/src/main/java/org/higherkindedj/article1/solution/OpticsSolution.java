@@ -8,8 +8,8 @@ import java.util.function.Function;
 /**
  * Demonstrates how optics elegantly solve the nested update problem.
  *
- * <p>The same operations that required 20+ lines of manual reconstruction become single,
- * composable expressions with lenses.
+ * <p>The same operations that required 20+ lines of manual reconstruction become single, composable
+ * expressions with lenses.
  */
 public class OpticsSolution {
 

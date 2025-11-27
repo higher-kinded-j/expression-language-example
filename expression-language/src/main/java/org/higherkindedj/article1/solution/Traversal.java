@@ -18,7 +18,8 @@ import java.util.function.Function;
  * @param <S> the type of the whole structure
  * @param <A> the type of each focused element
  */
-public record Traversal<S, A>(Function<S, List<A>> getAll, BiFunction<Function<A, A>, S, S> modifyAll) {
+public record Traversal<S, A>(
+    Function<S, List<A>> getAll, BiFunction<Function<A, A>, S, S> modifyAll) {
 
   /** Get all focused values from the structure. */
   public List<A> getAll(S whole) {
