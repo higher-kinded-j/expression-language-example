@@ -150,13 +150,43 @@ if (employee instanceof Employee(_, _, Address(var street, _, _))) {
 
 Pattern matching lets us drill down through layers, ignoring fields we don't care about, and extract exactly what we need. It's declarative, composable, and elegant.
 
-But to write a new street? We're back to the imperative copy-constructor cascade. There's no "pattern setting" or "record update expression" in Java. We cannot write:
+But to write a new street? We're back to the imperative copy-constructor cascade. There's no "pattern setting" in Java. We cannot write:
 
 ```java
-employee with { address.street = "100 New Street" }  // Fantasy syntax—doesn't exist
+employee with { address.street = "100 New Street" }  // Nested updates—not supported
 ```
 
-Other languages have recognised this gap. Haskell has lenses. Scala has Monocle. F# has property access expressions. Even C# has `with` expressions for records. Java has... nothing built-in.
+### A Note on JEP 468: Derived Record Creation
+
+Java is making progress here. [JEP 468](https://openjdk.org/jeps/468) introduces derived record creation—a `with` expression for records. Currently a Candidate JEP (preview in JDK 23), it allows:
+
+```java
+Address updated = oldAddress with { street = "100 New Street"; };
+```
+
+This is genuinely useful. Instead of manually copying every field, you specify only what changes. The compiler handles the rest.
+
+However, JEP 468 solves *single-level* updates, not *nested* ones. You cannot write:
+
+```java
+employee with { address.street = "100 New Street" }  // Not supported by JEP 468
+```
+
+To update a nested field, you must chain `with` expressions at each level:
+
+```java
+Employee updated = employee with {
+    address = address with { street = "100 New Street"; };
+};
+```
+
+Better than the full copy-constructor cascade, certainly. But you still manually thread updates through each layer. The ceremony shrinks but doesn't disappear. And as nesting deepens—a company containing departments containing employees containing addresses—even chained `with` expressions become unwieldy.
+
+JEP 468 is a welcome addition, but it addresses syntax, not composability. Optics provide something fundamentally different: reusable, composable access paths that can be defined once and applied anywhere.
+
+### The Wider Landscape
+
+Other languages have recognised this gap. Haskell has lenses. Scala has Monocle. F# has property access expressions. C# has `with` expressions for records (similar to JEP 468). What distinguishes optics is *composition*—the ability to combine small, focused accessors into larger ones that handle arbitrary depth automatically.
 
 This asymmetry isn't just inconvenient—it actively discourages immutability. Developers facing the copy-constructor cascade often reach for mutability instead. "Just make the fields non-final," they say. "It's simpler." And in the short term, it is. But mutability brings its own problems: thread safety issues, defensive copying, spooky action at a distance when an object you thought you owned gets modified by code you didn't control.
 
