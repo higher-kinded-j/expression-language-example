@@ -11,9 +11,9 @@ import org.higherkindedj.article3.ast.Expr.Literal;
 import org.higherkindedj.article3.ast.Expr.Variable;
 import org.higherkindedj.article3.ast.ExprPrisms;
 import org.higherkindedj.article3.ast.LiteralLenses;
-import org.higherkindedj.optics.Affine;
 import org.higherkindedj.optics.Lens;
 import org.higherkindedj.optics.Prism;
+import org.higherkindedj.optics.Traversal;
 
 /**
  * Demonstrates the Expression AST and basic optics from Article 3.
@@ -117,29 +117,31 @@ public final class ExprDemo {
     System.out.println("--- Composing Optics ---\n");
 
     // Compose: Expr → Literal → Object (value)
-    // Prism + Lens = Affine (may or may not focus on a value)
+    // Prism + Lens = Traversal (may focus on zero or more values)
     Prism<Expr, Literal> literalPrism = ExprPrisms.literal();
     Lens<Literal, Object> valueLens = LiteralLenses.value();
-    Affine<Expr, Object> literalValue = literalPrism.composeWith(valueLens);
+    Traversal<Expr, Object> literalValue =
+        literalPrism.asTraversal().andThen(valueLens.asTraversal());
 
     Expr lit = new Literal(42);
     Expr var = new Variable("x");
 
-    System.out.println("Get value from Literal 42: " + literalValue.getOptional(lit));
-    System.out.println("Get value from Variable x: " + literalValue.getOptional(var));
+    System.out.println("Get value from Literal 42: " + literalValue.getAll(lit));
+    System.out.println("Get value from Variable x: " + literalValue.getAll(var));
 
-    Expr updated = literalValue.set(100, lit);
+    Expr updated = literalValue.modify(_ -> 100, lit);
     System.out.println("Set value to 100: " + updated.format());
 
     // Compose: Expr → Binary → Expr (left operand)
     Prism<Expr, Binary> binaryPrism = ExprPrisms.binary();
     Lens<Binary, Expr> leftLens = BinaryLenses.left();
-    Affine<Expr, Expr> binaryLeft = binaryPrism.composeWith(leftLens);
+    Traversal<Expr, Expr> binaryLeft =
+        binaryPrism.asTraversal().andThen(leftLens.asTraversal());
 
     Expr bin = new Binary(new Literal(1), BinaryOp.ADD, new Literal(2));
 
-    System.out.println("\nGet left from 1+2: " + binaryLeft.getOptional(bin).map(Expr::format));
-    System.out.println("Get left from Literal 42: " + binaryLeft.getOptional(lit));
+    System.out.println("\nGet left from 1+2: " + binaryLeft.getAll(bin).stream().map(Expr::format).toList());
+    System.out.println("Get left from Literal 42: " + binaryLeft.getAll(lit));
 
     // Modify the left operand
     Expr withNewLeft =

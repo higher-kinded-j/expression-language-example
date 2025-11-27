@@ -12,7 +12,7 @@ import org.higherkindedj.article4.ast.Expr.Literal;
 import org.higherkindedj.article4.ast.Expr.Variable;
 import org.higherkindedj.hkt.Kind;
 import org.higherkindedj.optics.Traversal;
-import org.higherkindedj.typeclass.Applicative;
+import org.higherkindedj.hkt.Applicative;
 
 /**
  * Traversals for the expression AST using higher-kinded-j.
