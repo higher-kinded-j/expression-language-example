@@ -2,6 +2,9 @@
 // Licensed under the MIT License. See LICENSE.md in the project root for license information.
 package org.higherkindedj.article3.ast;
 
+import org.higherkindedj.hkj.optics.annotations.GenerateLenses;
+import org.higherkindedj.hkj.optics.annotations.GeneratePrisms;
+
 /**
  * The expression AST for the expression language.
  *
@@ -14,22 +17,30 @@ package org.higherkindedj.article3.ast;
  *   <li>{@link Conditional} — if-then-else expressions
  * </ul>
  *
- * <p>In production with higher-kinded-j, you would annotate this with {@code @GeneratePrisms} and
- * each record with {@code @GenerateLenses}.
+ * <p>The {@code @GeneratePrisms} annotation on the sealed interface generates prism accessors for
+ * each variant, enabling type-safe pattern matching without explicit instanceof checks.
+ *
+ * <p>The {@code @GenerateLenses} annotation on each record generates lens accessors for each field,
+ * enabling composable, immutable updates to nested structures.
  */
+@GeneratePrisms
 public sealed interface Expr {
 
   /** A literal value (integer, boolean, or string). */
+  @GenerateLenses
   record Literal(Object value) implements Expr {}
 
   /** A variable reference. */
+  @GenerateLenses
   record Variable(String name) implements Expr {}
 
   /** A binary operation. */
+  @GenerateLenses
   record Binary(Expr left, BinaryOp op, Expr right) implements Expr {}
 
   /** A conditional (if-then-else) expression. */
-  record Conditional(Expr cond, Expr then_, Expr else_) implements Expr {}
+  @GenerateLenses
+  record Conditional(Expr cond, Expr thenBranch, Expr elseBranch) implements Expr {}
 
   // ========== Formatting ==========
 

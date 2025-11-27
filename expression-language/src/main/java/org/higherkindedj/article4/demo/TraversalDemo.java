@@ -15,7 +15,7 @@ import org.higherkindedj.article4.ast.Expr.Variable;
 import org.higherkindedj.article4.traversal.ExprFold;
 import org.higherkindedj.article4.traversal.ExprTraversal;
 import org.higherkindedj.article4.traversal.NodeCounts;
-import org.higherkindedj.article4.traversal.Traversal;
+import org.higherkindedj.hkj.optics.Traversal;
 
 /**
  * Demonstrates traversals for expression trees from Article 4.
@@ -27,7 +27,11 @@ import org.higherkindedj.article4.traversal.Traversal;
  *   <li>Bottom-up and top-down tree transformations
  *   <li>Collecting information with folds
  *   <li>Finding variables, operators, and common subexpressions
+ *   <li>Effect-polymorphic traversals with higher-kinded-j
  * </ul>
+ *
+ * <p>The traversals use higher-kinded-j's {@code Traversal} type with effect-polymorphic {@code
+ * modifyF} method.
  */
 public final class TraversalDemo {
 
@@ -42,8 +46,9 @@ public final class TraversalDemo {
   }
 
   private static void childrenTraversal() {
-    System.out.println("--- Children Traversal ---\n");
+    System.out.println("--- Children Traversal (higher-kinded-j) ---\n");
 
+    // This traversal is effect-polymorphic - same traversal works with different effects
     Traversal<Expr, Expr> children = ExprTraversal.children();
 
     // A literal has no children
@@ -59,8 +64,7 @@ public final class TraversalDemo {
     System.out.println("Binary (a + 1) children: " + formatExprs(children.getAll(bin)));
 
     // A conditional has three children
-    Expr cond =
-        new Conditional(new Variable("flag"), new Literal(1), new Literal(0));
+    Expr cond = new Conditional(new Variable("flag"), new Literal(1), new Literal(0));
     System.out.println(
         "Conditional (if flag then 1 else 0) children: " + formatExprs(children.getAll(cond)));
 
@@ -157,7 +161,8 @@ public final class TraversalDemo {
             new Binary(new Variable("x"), GT, new Variable("y")),
             new Binary(
                 new Binary(new Variable("x"), ADD, new Literal(1)), MUL, new Variable("z")),
-            new Binary(new Binary(new Variable("y"), SUB, new Variable("z")), ADD, new Variable("w")));
+            new Binary(
+                new Binary(new Variable("y"), SUB, new Variable("z")), ADD, new Variable("w")));
 
     System.out.println("Expression: " + expr.format());
     System.out.println();
@@ -186,7 +191,8 @@ public final class TraversalDemo {
     System.out.println("Is constant: " + ExprFold.isConstant(expr));
 
     // Try with a constant expression
-    Expr constant = new Binary(new Literal(1), ADD, new Binary(new Literal(2), MUL, new Literal(3)));
+    Expr constant =
+        new Binary(new Literal(1), ADD, new Binary(new Literal(2), MUL, new Literal(3)));
     System.out.println("\nConstant expression: " + constant.format());
     System.out.println("Is constant: " + ExprFold.isConstant(constant));
 
@@ -198,8 +204,7 @@ public final class TraversalDemo {
 
     // Build: (x + 1) + (x + 1) * (x + 1)
     Expr xPlusOne = new Binary(new Variable("x"), ADD, new Literal(1));
-    Expr expr =
-        new Binary(xPlusOne, ADD, new Binary(xPlusOne, MUL, xPlusOne));
+    Expr expr = new Binary(xPlusOne, ADD, new Binary(xPlusOne, MUL, xPlusOne));
 
     System.out.println("Expression: " + expr.format());
     System.out.println();
@@ -208,7 +213,8 @@ public final class TraversalDemo {
     var common = ExprFold.findCommonSubexpressions(expr);
     System.out.println("Common subexpressions (appearing more than once):");
     for (var entry : common.entrySet()) {
-      System.out.println("  " + entry.getKey().format() + " appears " + entry.getValue() + " times");
+      System.out.println(
+          "  " + entry.getKey().format() + " appears " + entry.getValue() + " times");
     }
 
     System.out.println("\nThis information could be used for:");

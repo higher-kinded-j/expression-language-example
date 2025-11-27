@@ -154,12 +154,12 @@ public final class ExprOptimiser {
    * </ul>
    */
   public static Expr simplifyConditionals(Expr expr) {
-    if (expr instanceof Conditional(Literal(Object cv), var then_, var else_)) {
+    if (expr instanceof Conditional(Literal(Object cv), var thenBranch, var elseBranch)) {
       if (cv.equals(true)) {
-        return then_;
+        return thenBranch;
       }
       if (cv.equals(false)) {
-        return else_;
+        return elseBranch;
       }
     }
     return expr;

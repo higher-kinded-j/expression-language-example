@@ -35,11 +35,11 @@ public final class ExprTransform {
           case Variable(_) -> expr;
           case Binary(var l, var op, var r) ->
               new Binary(transformBottomUp(l, transform), op, transformBottomUp(r, transform));
-          case Conditional(var c, var t, var e) ->
+          case Conditional(var c, var thenBranch, var elseBranch) ->
               new Conditional(
                   transformBottomUp(c, transform),
-                  transformBottomUp(t, transform),
-                  transformBottomUp(e, transform));
+                  transformBottomUp(thenBranch, transform),
+                  transformBottomUp(elseBranch, transform));
         };
 
     // Then apply the transformation to this node
@@ -65,11 +65,11 @@ public final class ExprTransform {
       case Variable(_) -> transformed;
       case Binary(var l, var op, var r) ->
           new Binary(transformTopDown(l, transform), op, transformTopDown(r, transform));
-      case Conditional(var c, var t, var e) ->
+      case Conditional(var c, var thenBranch, var elseBranch) ->
           new Conditional(
               transformTopDown(c, transform),
-              transformTopDown(t, transform),
-              transformTopDown(e, transform));
+              transformTopDown(thenBranch, transform),
+              transformTopDown(elseBranch, transform));
     };
   }
 }
