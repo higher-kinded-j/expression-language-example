@@ -196,38 +196,38 @@ public final class ExprOptimiser {
   private static Expr simplifyIdentity(Expr expr) {
     return switch (expr) {
         // x + 0 → x, 0 + x → x
-      case Binary(var x, ADD, Literal(Integer i)) when i == 0 -> x;
-      case Binary(Literal(Integer i), ADD, var x) when i == 0 -> x;
+      case Binary(var x, var op, Literal(Integer i)) when op == ADD && i == 0 -> x;
+      case Binary(Literal(Integer i), var op, var x) when op == ADD && i == 0 -> x;
 
         // x - 0 → x
-      case Binary(var x, SUB, Literal(Integer i)) when i == 0 -> x;
+      case Binary(var x, var op, Literal(Integer i)) when op == SUB && i == 0 -> x;
 
         // x * 1 → x, 1 * x → x
-      case Binary(var x, MUL, Literal(Integer i)) when i == 1 -> x;
-      case Binary(Literal(Integer i), MUL, var x) when i == 1 -> x;
+      case Binary(var x, var op, Literal(Integer i)) when op == MUL && i == 1 -> x;
+      case Binary(Literal(Integer i), var op, var x) when op == MUL && i == 1 -> x;
 
         // x * 0 → 0, 0 * x → 0
-      case Binary(_, MUL, Literal(Integer i)) when i == 0 -> new Literal(0);
-      case Binary(Literal(Integer i), MUL, _) when i == 0 -> new Literal(0);
+      case Binary(_, var op, Literal(Integer i)) when op == MUL && i == 0 -> new Literal(0);
+      case Binary(Literal(Integer i), var op, _) when op == MUL && i == 0 -> new Literal(0);
 
         // x / 1 → x
-      case Binary(var x, DIV, Literal(Integer i)) when i == 1 -> x;
+      case Binary(var x, var op, Literal(Integer i)) when op == DIV && i == 1 -> x;
 
         // x && true → x, true && x → x
-      case Binary(var x, AND, Literal(Boolean b)) when b -> x;
-      case Binary(Literal(Boolean b), AND, var x) when b -> x;
+      case Binary(var x, var op, Literal(Boolean b)) when op == AND && b -> x;
+      case Binary(Literal(Boolean b), var op, var x) when op == AND && b -> x;
 
         // x || false → x, false || x → x
-      case Binary(var x, OR, Literal(Boolean b)) when !b -> x;
-      case Binary(Literal(Boolean b), OR, var x) when !b -> x;
+      case Binary(var x, var op, Literal(Boolean b)) when op == OR && !b -> x;
+      case Binary(Literal(Boolean b), var op, var x) when op == OR && !b -> x;
 
         // x && false → false
-      case Binary(_, AND, Literal(Boolean b)) when !b -> new Literal(false);
-      case Binary(Literal(Boolean b), AND, _) when !b -> new Literal(false);
+      case Binary(_, var op, Literal(Boolean b)) when op == AND && !b -> new Literal(false);
+      case Binary(Literal(Boolean b), var op, _) when op == AND && !b -> new Literal(false);
 
         // x || true → true
-      case Binary(_, OR, Literal(Boolean b)) when b -> new Literal(true);
-      case Binary(Literal(Boolean b), OR, _) when b -> new Literal(true);
+      case Binary(_, var op, Literal(Boolean b)) when op == OR && b -> new Literal(true);
+      case Binary(Literal(Boolean b), var op, _) when op == OR && b -> new Literal(true);
 
       default -> expr;
     };
