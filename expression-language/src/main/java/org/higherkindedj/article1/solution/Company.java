@@ -13,13 +13,13 @@ public record Company(String name, Address headquarters, List<Department> depart
 
     public static Lens<Company, String> name() {
       return Lens.of(
-          Company::name, (newName, co) -> new Company(newName, co.headquarters(), co.departments()));
+          Company::name,
+          (newName, co) -> new Company(newName, co.headquarters(), co.departments()));
     }
 
     public static Lens<Company, Address> headquarters() {
       return Lens.of(
-          Company::headquarters,
-          (newHq, co) -> new Company(co.name(), newHq, co.departments()));
+          Company::headquarters, (newHq, co) -> new Company(co.name(), newHq, co.departments()));
     }
 
     public static Lens<Company, List<Department>> departments() {

@@ -5,8 +5,8 @@ package org.higherkindedj.article1.solution;
 /**
  * Address record with lenses.
  *
- * <p>With higher-kinded-j (when Maven Central is accessible), you would use
- * {@code @GenerateLenses} to auto-generate these lens classes.
+ * <p>With higher-kinded-j (when Maven Central is accessible), you would use {@code @GenerateLenses}
+ * to auto-generate these lens classes.
  */
 public record Address(String street, String city, String postcode) {
 
@@ -16,7 +16,8 @@ public record Address(String street, String city, String postcode) {
 
     public static Lens<Address, String> street() {
       return Lens.of(
-          Address::street, (newStreet, addr) -> new Address(newStreet, addr.city(), addr.postcode()));
+          Address::street,
+          (newStreet, addr) -> new Address(newStreet, addr.city(), addr.postcode()));
     }
 
     public static Lens<Address, String> city() {

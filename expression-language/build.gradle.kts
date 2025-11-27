@@ -15,10 +15,13 @@ java {
 repositories {
     mavenCentral()
     gradlePluginPortal()
+    maven {
+        url= uri("https://central.sonatype.com/repository/maven-snapshots/")
+    }
 }
 
 // Higher-Kinded-J version - enable when Maven Central is accessible
-val hkjVersion = "0.2.1"
+val hkjVersion = "0.2.2-SNAPSHOT"
 
 dependencies {
     // Higher-Kinded-J - uncomment when Maven Central is accessible
@@ -26,7 +29,6 @@ dependencies {
      annotationProcessor("io.github.higher-kinded-j:hkj-processor:$hkjVersion")
 
 
-     Testing - commented until Maven Central is accessible
      testImplementation(platform("org.junit:junit-bom:5.13.0"))
      testImplementation("org.junit.jupiter:junit-jupiter")
 }
