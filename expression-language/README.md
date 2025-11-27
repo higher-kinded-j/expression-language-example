@@ -101,11 +101,14 @@ gradle compileJava
 
 ## JDK Requirements
 
-This project uses **JDK 21** with preview features enabled (for unnamed variables `_`).
+This project uses **JDK 25** with the higher-kinded-j library (version 0.2.2-SNAPSHOT).
 
-The manual optics implementations demonstrate the concepts that higher-kinded-j would auto-generate with `@GenerateLenses` and `@GeneratePrisms`.
+Features used:
+- Unnamed variables (`_`) in lambda expressions
+- Record patterns in switch expressions
+- Sealed interfaces
 
-When Maven Central is accessible, uncomment the dependencies in `build.gradle.kts` to use the full higher-kinded-j library with annotation processing.
+The manual optics implementations demonstrate the concepts that higher-kinded-j auto-generates with `@GenerateLenses` and `@GeneratePrisms`.
 
 ## What's Next
 
