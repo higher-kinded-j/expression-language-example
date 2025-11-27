@@ -1,18 +1,18 @@
-# Article 2: Optics Fundamentals
+# Article 3: AST and Basic Optics
 
-**Branch**: `article-2-optics-fundamentals`
+**Branch**: `article-3-ast-basic-optics`
 
-This branch contains the companion code for Article 2 of the "Functional Optics for Modern Java" series. It builds on Article 1 by providing a comprehensive exploration of all three core optic types.
+This branch contains the companion code for Article 3 of the "Functional Optics for Modern Java" series. It builds on Article 2 by introducing the Expression Language domain and applying optics to AST manipulation.
 
 ## What's New in This Branch
 
-Building on the foundation from Article 1, this branch adds:
+Building on the foundation from Articles 1 and 2, this branch adds:
 
-- **Complete optics implementation** — Lens, Prism, Traversal, and Optional (affine)
-- **Prisms for sum types** — Type-safe access to sealed interface variants
-- **Traversals for collections** — Bulk operations with filtering and aggregation
-- **Composition patterns** — Deep path building through multiple optic types
-- **Expression Language preview** — AST structure for Articles 3-5
+- **Expression Language AST** — A complete sealed interface hierarchy for expressions
+- **Auto-generated-style optics** — Lenses and prisms for the AST (simulating higher-kinded-j generation)
+- **Expression transformations** — Bottom-up and top-down tree traversal utilities
+- **Expression optimiser** — Constant folding and identity simplification
+- **Optic composition** — Prism-to-lens composition for deep AST access
 
 ## Running the Demos
 
@@ -20,43 +20,69 @@ Building on the foundation from Article 1, this branch adds:
 gradle run
 ```
 
-This runs all Article 2 demonstrations:
+This runs all Article 3 demonstrations:
 
-1. **LensDemo** — Basic lens operations, composition, and lens laws
-2. **PrismDemo** — Sum type access, type-safe downcasting
-3. **TraversalDemo** — Collection traversals, filtering, aggregation
-4. **CompositionDemo** — Deep path composition, manual vs optics comparison
-5. **ExpressionPreviewDemo** — Preview of the AST for the expression language
+1. **ExprDemo** — Building expressions, using prisms and lenses, pattern matching
+2. **OptimiserDemo** — Constant folding, identity simplification, conditional elimination
 
 ## Key Concepts Introduced
 
-### Lenses (Product Types)
-- Focus on exactly one field that always exists
-- Composition with `andThen()` for deep access
-- Laws: get-set, set-get, set-set
+### Expression Language AST
 
-### Prisms (Sum Types)
-- Focus on one variant of a sealed interface
-- `getOptional()` returns `Optional` (might not match)
-- `build()` constructs the sum type (always succeeds)
-- `modify()` transforms only if it matches
+A sealed interface hierarchy representing expressions:
 
-### Traversals (Collections)
-- Focus on zero or more elements
-- `modify()` transforms all focused elements
-- `filtered()` targets only matching elements
-- `foldMap()` aggregates into a single result
+```java
+sealed interface Expr {
+  record Literal(Object value) implements Expr {}
+  record Variable(String name) implements Expr {}
+  record Binary(Expr left, BinaryOp op, Expr right) implements Expr {}
+  record Conditional(Expr cond, Expr then_, Expr else_) implements Expr {}
+}
+```
 
-### Composition Table
+### Optics for the AST
 
-| First | Second | Result |
-|-------|--------|--------|
-| Lens | Lens | Lens |
-| Lens | Prism | Optional |
-| Lens | Traversal | Traversal |
-| Prism | Lens | Optional |
-| Prism | Prism | Prism |
-| Traversal | * | Traversal |
+**Prisms** for each Expr variant:
+- `ExprPrisms.literal()` — Focus on Literal expressions
+- `ExprPrisms.variable()` — Focus on Variable expressions
+- `ExprPrisms.binary()` — Focus on Binary expressions
+- `ExprPrisms.conditional()` — Focus on Conditional expressions
+
+**Lenses** for each record field:
+- `LiteralLenses.value()` — Access the value in a Literal
+- `VariableLenses.name()` — Access the name in a Variable
+- `BinaryLenses.left()`, `op()`, `right()` — Access Binary components
+- `ConditionalLenses.cond()`, `then_()`, `else_()` — Access Conditional components
+
+### Expression Transformations
+
+Recursive transformation patterns for tree operations:
+
+```java
+// Transform all nodes from leaves to root
+ExprTransform.transformBottomUp(expr, transform);
+
+// Transform all nodes from root to leaves
+ExprTransform.transformTopDown(expr, transform);
+```
+
+### Expression Optimiser
+
+Three optimisation passes:
+
+1. **Constant folding** — Evaluate constant expressions at compile time
+   - `1 + 2` → `3`
+   - `true && false` → `false`
+
+2. **Identity simplification** — Remove redundant operations
+   - `x + 0` → `x`
+   - `x * 1` → `x`
+   - `x * 0` → `0`
+   - `x && true` → `x`
+
+3. **Conditional simplification** — Eliminate branches with constant conditions
+   - `if true then a else b` → `a`
+   - `if false then a else b` → `b`
 
 ## Code Structure
 
@@ -66,31 +92,33 @@ src/main/java/org/higherkindedj/
 │   ├── problem/                 # The nested update problem
 │   └── solution/                # Basic lens solution
 │
-└── article2/                    # NEW: Article 2 code
-    ├── optics/                  # Core optic types
-    │   ├── Lens.java            # Product type access
-    │   ├── Prism.java           # Sum type access
-    │   ├── Optionall.java       # Affine traversal
-    │   └── Traversal.java       # Collection operations
+├── article2/                    # From Article 2
+│   ├── optics/                  # Core optic types
+│   ├── domain/                  # Example domain types
+│   └── demo/                    # Article 2 demos
+│
+└── article3/                    # NEW: Article 3 code
+    ├── ast/                     # Expression Language AST
+    │   ├── Expr.java            # Sealed interface + records
+    │   └── BinaryOp.java        # Binary operators enum
     │
-    ├── domain/                  # Example domain types
-    │   ├── Address.java         # With lens factories
-    │   ├── Employee.java        # With lens factories
-    │   ├── Department.java      # With lens factories
-    │   ├── Company.java         # With lens factories
-    │   ├── Shape.java           # Sealed interface + prisms
-    │   ├── Customer.java        # E-commerce domain
-    │   ├── Order.java           # E-commerce domain
-    │   ├── LineItem.java        # E-commerce domain
-    │   └── OrderStatus.java     # Order status enum
+    ├── optics/                  # Optics for the AST
+    │   ├── Lens.java            # Lens definition
+    │   ├── Prism.java           # Prism definition
+    │   ├── Optionall.java       # Affine traversal
+    │   ├── ExprPrisms.java      # Prisms for Expr variants
+    │   ├── LiteralLenses.java   # Lenses for Literal
+    │   ├── VariableLenses.java  # Lenses for Variable
+    │   ├── BinaryLenses.java    # Lenses for Binary
+    │   └── ConditionalLenses.java  # Lenses for Conditional
+    │
+    ├── transform/               # Tree transformations
+    │   ├── ExprTransform.java   # Bottom-up/top-down traversal
+    │   └── ExprOptimiser.java   # Constant folding, simplification
     │
     └── demo/                    # Runnable demonstrations
-        ├── Article2Demo.java    # Main entry point
-        ├── LensDemo.java        # Lens operations
-        ├── PrismDemo.java       # Prism operations
-        ├── TraversalDemo.java   # Traversal operations
-        ├── CompositionDemo.java # Composition patterns
-        └── ExpressionPreviewDemo.java  # AST preview
+        ├── ExprDemo.java        # AST building and optics
+        └── OptimiserDemo.java   # Optimisation examples
 ```
 
 ## Building
@@ -104,20 +132,22 @@ gradle compileJava
 This project uses **JDK 25** with the higher-kinded-j library (version 0.2.2-SNAPSHOT).
 
 Features used:
-- Unnamed variables (`_`) in lambda expressions
+- Unnamed variables (`_`) in lambda expressions and patterns
 - Record patterns in switch expressions
 - Sealed interfaces
+- Pattern matching for instanceof
 
-The manual optics implementations demonstrate the concepts that higher-kinded-j auto-generates with `@GenerateLenses` and `@GeneratePrisms`.
+The optics implementations simulate what higher-kinded-j auto-generates with `@GenerateLenses` and `@GeneratePrisms`.
 
 ## What's Next
 
-Article 3 will begin building the Expression Language interpreter:
-- Full AST definition with sealed interfaces
-- Recursive traversals for tree operations
-- Variable renaming and constant folding
-- Pattern-based transformations
+Article 4 will introduce traversals for recursive structures:
+- Implementing Traversal for expression trees
+- Folding and collecting over AST nodes
+- Building queries with traversal composition
+- More sophisticated transformations
 
-## Previous Article
+## Previous Articles
 
 - [Article 1: The Immutability Gap](docs/article-1-the-immutability-gap.md) — Problem and basic solution
+- [Article 2: Optics Fundamentals](docs/article-2-optics-fundamentals.md) — Lens, Prism, Traversal
