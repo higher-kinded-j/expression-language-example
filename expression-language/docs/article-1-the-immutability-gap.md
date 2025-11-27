@@ -458,6 +458,21 @@ This article introduced the problem—the immutability gap—and sketched the so
 - The basic optics family: lens, prism, traversal
 - A quick win showing the dramatic code reduction
 
+### Introducing higher-kinded-j
+
+Throughout this series, we'll use [higher-kinded-j](https://github.com/higher-kinded-j/higher-kinded-j)—a library that brings functional programming abstractions to modern Java. It provides:
+
+- **Production-ready optics**: Lens, Prism, Traversal, and more—with proper composition and laws
+- **Annotation-driven generation**: The `@GenerateLenses` annotation eliminates boilerplate by generating lens accessors for your records automatically
+- **Higher-kinded types**: The foundation that makes optics (and other abstractions like functors and monads) possible in Java's type system
+- **Zero runtime overhead**: All the abstraction happens at compile time
+
+The library fills a gap in the Java ecosystem. While Scala has Monocle and Haskell has the `lens` library, Java has lacked a mature, idiomatic optics implementation. higher-kinded-j brings these patterns to Java without sacrificing type safety or requiring exotic language features.
+
+You don't need to understand higher-kinded types to use the library effectively. The optics API is intuitive: compose lenses with `andThen`, get values with `get`, set values with `set`. The underlying type machinery stays out of your way.
+
+### The Road Ahead
+
 In Article 2, we'll dive deeper into optics fundamentals:
 - Lens laws and why they matter for correctness
 - Prisms for sum types and sealed interfaces
