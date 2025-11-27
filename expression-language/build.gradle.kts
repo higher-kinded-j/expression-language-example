@@ -48,7 +48,7 @@ tasks.test {
     useJUnitPlatform()
 }
 
-// Spotless - enable when Gradle Plugin Portal is accessible
+// Spotless configuration - enable when Gradle Plugin Portal is accessible
 // spotless {
 //     lineEndings = com.diffplug.spotless.LineEnding.UNIX
 //     java {

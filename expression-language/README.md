@@ -1,95 +1,120 @@
-# Article 1: The Immutability Gap
+# Article 2: Optics Fundamentals
 
-**Branch**: `article-1-immutability-gap`
+**Branch**: `article-2-optics-fundamentals`
 
-This branch contains the companion code for Article 1 of the "Functional Optics for Modern Java" series.
+This branch contains the companion code for Article 2 of the "Functional Optics for Modern Java" series. It builds on Article 1 by providing a comprehensive exploration of all three core optic types.
 
-## What's in This Branch
+## What's New in This Branch
 
-This branch demonstrates **the problem** that optics solve and provides a **quick win** showing how optics elegantly solve it.
+Building on the foundation from Article 1, this branch adds:
 
-### The Problem (`problem` package)
+- **Complete optics implementation** — Lens, Prism, Traversal, and Optional (affine)
+- **Prisms for sum types** — Type-safe access to sealed interface variants
+- **Traversals for collections** — Bulk operations with filtering and aggregation
+- **Composition patterns** — Deep path building through multiple optic types
+- **Expression Language preview** — AST structure for Articles 3-5
 
-The `org.higherkindedj.article1.problem` package shows the painful reality of updating deeply nested immutable records in Java:
+## Running the Demos
 
-- **20+ lines of code** to change a single street address
-- **Error-prone** reconstruction of every record in the path
-- **No help from pattern matching** — which only aids reading, not writing
-
-Run the problem demonstration:
 ```bash
-java -cp build/classes/java/main org.higherkindedj.article1.problem.NestedUpdateProblem
+gradle run
 ```
 
-### The Solution (`solution` package)
+This runs all Article 2 demonstrations:
 
-The `org.higherkindedj.article1.solution` package shows how optics solve this elegantly:
-
-- **1 line of code** for the same update
-- **Composable** lenses that combine naturally
-- **Type-safe** with compile-time checking
-
-Run the solution demonstration:
-```bash
-java -cp build/classes/java/main org.higherkindedj.article1.solution.OpticsSolution
-```
+1. **LensDemo** — Basic lens operations, composition, and lens laws
+2. **PrismDemo** — Sum type access, type-safe downcasting
+3. **TraversalDemo** — Collection traversals, filtering, aggregation
+4. **CompositionDemo** — Deep path composition, manual vs optics comparison
+5. **ExpressionPreviewDemo** — Preview of the AST for the expression language
 
 ## Key Concepts Introduced
 
-1. **Lens** — Focuses on exactly one field within a structure
-2. **Composition** — Lenses combine with `andThen()` to focus deeper
-3. **Traversal** — Focuses on multiple values (e.g., all elements in a list)
+### Lenses (Product Types)
+- Focus on exactly one field that always exists
+- Composition with `andThen()` for deep access
+- Laws: get-set, set-get, set-set
+
+### Prisms (Sum Types)
+- Focus on one variant of a sealed interface
+- `getOptional()` returns `Optional` (might not match)
+- `build()` constructs the sum type (always succeeds)
+- `modify()` transforms only if it matches
+
+### Traversals (Collections)
+- Focus on zero or more elements
+- `modify()` transforms all focused elements
+- `filtered()` targets only matching elements
+- `foldMap()` aggregates into a single result
+
+### Composition Table
+
+| First | Second | Result |
+|-------|--------|--------|
+| Lens | Lens | Lens |
+| Lens | Prism | Optional |
+| Lens | Traversal | Traversal |
+| Prism | Lens | Optional |
+| Prism | Prism | Prism |
+| Traversal | * | Traversal |
 
 ## Code Structure
 
 ```
-src/main/java/org/higherkindedj/article1/
-├── problem/
-│   ├── Address.java          # Simple record
-│   ├── Employee.java         # Nested record
-│   ├── Department.java       # Contains list
-│   ├── Company.java          # Top-level
-│   └── NestedUpdateProblem.java  # THE PROBLEM
+src/main/java/org/higherkindedj/
+├── article1/                    # From Article 1
+│   ├── problem/                 # The nested update problem
+│   └── solution/                # Basic lens solution
 │
-└── solution/
-    ├── Lens.java             # Core optic type
-    ├── Traversal.java        # For collections
-    ├── Address.java          # Record + Lenses
-    ├── Employee.java         # Record + Lenses
-    ├── Department.java       # Record + Lenses
-    ├── Company.java          # Record + Lenses
-    └── OpticsSolution.java   # THE SOLUTION
+└── article2/                    # NEW: Article 2 code
+    ├── optics/                  # Core optic types
+    │   ├── Lens.java            # Product type access
+    │   ├── Prism.java           # Sum type access
+    │   ├── Optionall.java       # Affine traversal
+    │   └── Traversal.java       # Collection operations
+    │
+    ├── domain/                  # Example domain types
+    │   ├── Address.java         # With lens factories
+    │   ├── Employee.java        # With lens factories
+    │   ├── Department.java      # With lens factories
+    │   ├── Company.java         # With lens factories
+    │   ├── Shape.java           # Sealed interface + prisms
+    │   ├── Customer.java        # E-commerce domain
+    │   ├── Order.java           # E-commerce domain
+    │   ├── LineItem.java        # E-commerce domain
+    │   └── OrderStatus.java     # Order status enum
+    │
+    └── demo/                    # Runnable demonstrations
+        ├── Article2Demo.java    # Main entry point
+        ├── LensDemo.java        # Lens operations
+        ├── PrismDemo.java       # Prism operations
+        ├── TraversalDemo.java   # Traversal operations
+        ├── CompositionDemo.java # Composition patterns
+        └── ExpressionPreviewDemo.java  # AST preview
 ```
 
 ## Building
 
 ```bash
-export JAVA_HOME=/opt/jdk24  # or wherever JDK 24 is installed
 gradle compileJava
 ```
 
 ## JDK Requirements
 
-This project uses **JDK 24** (Temurin/Adoptium). The manual lens implementations
-demonstrate the concepts that higher-kinded-j would auto-generate with `@GenerateLenses`.
+This project uses **JDK 21** with preview features enabled (for unnamed variables `_`).
 
-When Maven Central is accessible, uncomment the dependencies in `build.gradle.kts`
-to use the full higher-kinded-j library with annotation processing.
+The manual optics implementations demonstrate the concepts that higher-kinded-j would auto-generate with `@GenerateLenses` and `@GeneratePrisms`.
 
-## Spotless Configuration
-
-The project includes Spotless configuration matching higher-kinded-j's style:
-- Google Java Format
-- MIT License headers
-- Unix line endings
-
-Enable by uncommenting the Spotless plugin in `build.gradle.kts` when the
-Gradle Plugin Portal is accessible.
+When Maven Central is accessible, uncomment the dependencies in `build.gradle.kts` to use the full higher-kinded-j library with annotation processing.
 
 ## What's Next
 
-Article 2 will dive deeper into optics fundamentals:
-- Lens laws and guarantees
-- Prisms for sum types
-- More sophisticated traversals
-- Full higher-kinded-j integration
+Article 3 will begin building the Expression Language interpreter:
+- Full AST definition with sealed interfaces
+- Recursive traversals for tree operations
+- Variable renaming and constant folding
+- Pattern-based transformations
+
+## Previous Article
+
+- [Article 1: The Immutability Gap](docs/article-1-the-immutability-gap.md) — Problem and basic solution
