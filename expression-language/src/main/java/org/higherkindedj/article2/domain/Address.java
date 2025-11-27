@@ -22,7 +22,8 @@ public record Address(String street, String city, String postcode) {
 
     public static Lens<Address, String> street() {
       return Lens.of(
-          Address::street, (newStreet, addr) -> new Address(newStreet, addr.city(), addr.postcode()));
+          Address::street,
+          (newStreet, addr) -> new Address(newStreet, addr.city(), addr.postcode()));
     }
 
     public static Lens<Address, String> city() {

@@ -21,8 +21,7 @@ import java.util.function.Function;
 public record Prism<S, A>(Function<S, Optional<A>> getOptional, Function<A, S> build) {
 
   /** Create a prism from a partial getter and a builder. */
-  public static <S, A> Prism<S, A> of(
-      Function<S, Optional<A>> getOptional, Function<A, S> build) {
+  public static <S, A> Prism<S, A> of(Function<S, Optional<A>> getOptional, Function<A, S> build) {
     return new Prism<>(getOptional, build);
   }
 
@@ -34,8 +33,7 @@ public record Prism<S, A>(Function<S, Optional<A>> getOptional, Function<A, S> b
    */
   @SuppressWarnings("unchecked")
   public static <S, A extends S> Prism<S, A> fromClass(Class<A> clazz) {
-    return Prism.of(
-        s -> clazz.isInstance(s) ? Optional.of((A) s) : Optional.empty(), a -> a);
+    return Prism.of(s -> clazz.isInstance(s) ? Optional.of((A) s) : Optional.empty(), a -> a);
   }
 
   /** Try to extract the variant from the sum type. */
@@ -66,8 +64,7 @@ public record Prism<S, A>(Function<S, Optional<A>> getOptional, Function<A, S> b
    */
   public <B> Optionall<S, B> andThen(Lens<A, B> lens) {
     return Optionall.of(
-        s -> getOptional(s).map(lens::get),
-        (b, s) -> modify(a -> lens.set(b, a), s));
+        s -> getOptional(s).map(lens::get), (b, s) -> modify(a -> lens.set(b, a), s));
   }
 
   /**
@@ -77,9 +74,7 @@ public record Prism<S, A>(Function<S, Optional<A>> getOptional, Function<A, S> b
    * @return a prism from S to B
    */
   public <B> Prism<S, B> andThen(Prism<A, B> other) {
-    return Prism.of(
-        s -> getOptional(s).flatMap(other::getOptional),
-        b -> build(other.build(b)));
+    return Prism.of(s -> getOptional(s).flatMap(other::getOptional), b -> build(other.build(b)));
   }
 
   /**

@@ -15,6 +15,7 @@ import org.higherkindedj.article2.optics.Prism;
  * Demonstrates prism operations from Article 2.
  *
  * <p>This demo shows:
+ *
  * <ul>
  *   <li>Basic prism operations: getOptional, build, matches, modify
  *   <li>Composing prisms with lenses
@@ -120,9 +121,7 @@ public final class PrismDemo {
     // Transform all circles (double radius), leave others unchanged
     System.out.println("\nTransform all circles (double radius):");
     List<Shape> transformed =
-        shapes.stream()
-            .map(s -> circlePrism.modify(c -> new Circle(c.radius() * 2), s))
-            .toList();
+        shapes.stream().map(s -> circlePrism.modify(c -> new Circle(c.radius() * 2), s)).toList();
     transformed.forEach(s -> System.out.println("  " + s));
     System.out.println();
   }

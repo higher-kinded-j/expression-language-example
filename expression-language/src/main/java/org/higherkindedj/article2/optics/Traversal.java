@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE.md in the project root for license information.
 package org.higherkindedj.article2.optics;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
@@ -29,9 +28,7 @@ public record Traversal<S, A>(
 
   /** Create a traversal over list elements. */
   public static <A> Traversal<List<A>, A> list() {
-    return Traversal.of(
-        list -> list,
-        (f, list) -> list.stream().map(f).toList());
+    return Traversal.of(list -> list, (f, list) -> list.stream().map(f).toList());
   }
 
   /** Get all focused values. */
@@ -70,10 +67,7 @@ public record Traversal<S, A>(
   public Traversal<S, A> filtered(Predicate<A> predicate) {
     return Traversal.of(
         s -> getAll(s).stream().filter(predicate).toList(),
-        (f, s) ->
-            modify.apply(
-                a -> predicate.test(a) ? f.apply(a) : a,
-                s));
+        (f, s) -> modify.apply(a -> predicate.test(a) ? f.apply(a) : a, s));
   }
 
   /**

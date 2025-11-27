@@ -18,8 +18,7 @@ import java.util.function.Function;
  * @param <S> the type of the whole structure
  * @param <A> the type of the focused part (if it exists)
  */
-public record Optionall<S, A>(
-    Function<S, Optional<A>> getOptional, BiFunction<A, S, S> set) {
+public record Optionall<S, A>(Function<S, Optional<A>> getOptional, BiFunction<A, S, S> set) {
 
   /** Create an Optional from getter and setter. */
   public static <S, A> Optionall<S, A> of(
@@ -50,8 +49,7 @@ public record Optionall<S, A>(
    */
   public <B> Optionall<S, B> andThen(Lens<A, B> lens) {
     return Optionall.of(
-        s -> getOptional(s).map(lens::get),
-        (b, s) -> modify(a -> lens.set(b, a), s));
+        s -> getOptional(s).map(lens::get), (b, s) -> modify(a -> lens.set(b, a), s));
   }
 
   /**
@@ -61,7 +59,6 @@ public record Optionall<S, A>(
    */
   public Traversal<S, A> asTraversal() {
     return Traversal.of(
-        s -> getOptional(s).map(List::of).orElse(List.of()),
-        (f, s) -> modify(f, s));
+        s -> getOptional(s).map(List::of).orElse(List.of()), (f, s) -> modify(f, s));
   }
 }

@@ -72,27 +72,21 @@ public sealed interface Shape permits Shape.Circle, Shape.Rectangle, Shape.Trian
     public static Prism<Shape, Circle> circle() {
       return Prism.of(
           shape ->
-              shape instanceof Circle c
-                  ? java.util.Optional.of(c)
-                  : java.util.Optional.empty(),
+              shape instanceof Circle c ? java.util.Optional.of(c) : java.util.Optional.empty(),
           c -> c);
     }
 
     public static Prism<Shape, Rectangle> rectangle() {
       return Prism.of(
           shape ->
-              shape instanceof Rectangle r
-                  ? java.util.Optional.of(r)
-                  : java.util.Optional.empty(),
+              shape instanceof Rectangle r ? java.util.Optional.of(r) : java.util.Optional.empty(),
           r -> r);
     }
 
     public static Prism<Shape, Triangle> triangle() {
       return Prism.of(
           shape ->
-              shape instanceof Triangle t
-                  ? java.util.Optional.of(t)
-                  : java.util.Optional.empty(),
+              shape instanceof Triangle t ? java.util.Optional.of(t) : java.util.Optional.empty(),
           t -> t);
     }
   }

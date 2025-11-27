@@ -16,6 +16,7 @@ import org.higherkindedj.article2.optics.Traversal;
  * Demonstrates traversal operations from Article 2.
  *
  * <p>This demo shows:
+ *
  * <ul>
  *   <li>Basic list traversal
  *   <li>Composing traversals for nested collections
@@ -68,17 +69,25 @@ public final class TraversalDemo {
         new Department(
             "Engineering",
             new Employee(
-                "M001", "Alice Manager", new Address("1 Boss Lane", "London", "E1 1AA"),
+                "M001",
+                "Alice Manager",
+                new Address("1 Boss Lane", "London", "E1 1AA"),
                 new BigDecimal("120000")),
             List.of(
                 new Employee(
-                    "E001", "Bob", new Address("10 Tech Road", "London", "E1 2BB"),
+                    "E001",
+                    "Bob",
+                    new Address("10 Tech Road", "London", "E1 2BB"),
                     new BigDecimal("75000")),
                 new Employee(
-                    "E002", "Carol", new Address("20 Code Street", "Manchester", "M1 3CC"),
+                    "E002",
+                    "Carol",
+                    new Address("20 Code Street", "Manchester", "M1 3CC"),
                     new BigDecimal("80000")),
                 new Employee(
-                    "E003", "David", new Address("30 Dev Avenue", "London", "E1 4DD"),
+                    "E003",
+                    "David",
+                    new Address("30 Dev Avenue", "London", "E1 4DD"),
                     new BigDecimal("70000"))));
 
     System.out.println("Department: " + engineering.name());
@@ -117,16 +126,24 @@ public final class TraversalDemo {
     List<Employee> employees =
         List.of(
             new Employee(
-                "E001", "Alice", new Address("1 London Road", "London", "E1 1AA"),
+                "E001",
+                "Alice",
+                new Address("1 London Road", "London", "E1 1AA"),
                 new BigDecimal("75000")),
             new Employee(
-                "E002", "Bob", new Address("2 Manchester Ave", "Manchester", "M1 2BB"),
+                "E002",
+                "Bob",
+                new Address("2 Manchester Ave", "Manchester", "M1 2BB"),
                 new BigDecimal("70000")),
             new Employee(
-                "E003", "Carol", new Address("3 London Lane", "London", "E1 3CC"),
+                "E003",
+                "Carol",
+                new Address("3 London Lane", "London", "E1 3CC"),
                 new BigDecimal("80000")),
             new Employee(
-                "E004", "David", new Address("4 Leeds Street", "Leeds", "LS1 4DD"),
+                "E004",
+                "David",
+                new Address("4 Leeds Street", "Leeds", "LS1 4DD"),
                 new BigDecimal("65000")));
 
     System.out.println("All employees: " + employees.stream().map(Employee::name).toList());
@@ -180,12 +197,12 @@ public final class TraversalDemo {
     Traversal<List<Employee>, String> allCities =
         allEmployees.andThen(Employee.Lenses.address()).andThen(Address.Lenses.city());
 
-    Set<String> uniqueCities =
-        allCities.getAll(employees).stream().collect(Collectors.toSet());
+    Set<String> uniqueCities = allCities.getAll(employees).stream().collect(Collectors.toSet());
     System.out.println("Unique cities: " + uniqueCities);
 
     // Average salary
-    BigDecimal avgSalary = totalSalary.divide(BigDecimal.valueOf(count), 2, java.math.RoundingMode.HALF_UP);
+    BigDecimal avgSalary =
+        totalSalary.divide(BigDecimal.valueOf(count), 2, java.math.RoundingMode.HALF_UP);
     System.out.println("Average salary: £" + avgSalary);
     System.out.println();
   }

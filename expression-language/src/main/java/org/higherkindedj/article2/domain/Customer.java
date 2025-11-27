@@ -19,27 +19,22 @@ public record Customer(String id, String name, List<Order> orders) {
 
     public static Lens<Customer, String> id() {
       return Lens.of(
-          Customer::id,
-          (newId, cust) -> new Customer(newId, cust.name(), cust.orders()));
+          Customer::id, (newId, cust) -> new Customer(newId, cust.name(), cust.orders()));
     }
 
     public static Lens<Customer, String> name() {
       return Lens.of(
-          Customer::name,
-          (newName, cust) -> new Customer(cust.id(), newName, cust.orders()));
+          Customer::name, (newName, cust) -> new Customer(cust.id(), newName, cust.orders()));
     }
 
     public static Lens<Customer, List<Order>> orders() {
       return Lens.of(
-          Customer::orders,
-          (newOrders, cust) -> new Customer(cust.id(), cust.name(), newOrders));
+          Customer::orders, (newOrders, cust) -> new Customer(cust.id(), cust.name(), newOrders));
     }
   }
 
   /** Calculate total value of all orders. */
   public BigDecimal totalOrderValue() {
-    return orders.stream()
-        .map(Order::total)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    return orders.stream().map(Order::total).reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 }

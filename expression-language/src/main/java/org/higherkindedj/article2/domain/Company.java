@@ -24,8 +24,7 @@ public record Company(String name, Address headquarters, List<Department> depart
 
     public static Lens<Company, Address> headquarters() {
       return Lens.of(
-          Company::headquarters,
-          (newHq, co) -> new Company(co.name(), newHq, co.departments()));
+          Company::headquarters, (newHq, co) -> new Company(co.name(), newHq, co.departments()));
     }
 
     public static Lens<Company, List<Department>> departments() {

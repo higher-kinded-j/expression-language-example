@@ -25,8 +25,7 @@ public record Order(String orderId, List<LineItem> items, OrderStatus status) {
 
     public static Lens<Order, List<LineItem>> items() {
       return Lens.of(
-          Order::items,
-          (newItems, order) -> new Order(order.orderId(), newItems, order.status()));
+          Order::items, (newItems, order) -> new Order(order.orderId(), newItems, order.status()));
     }
 
     public static Lens<Order, OrderStatus> status() {
@@ -38,8 +37,6 @@ public record Order(String orderId, List<LineItem> items, OrderStatus status) {
 
   /** Calculate the total value of this order. */
   public BigDecimal total() {
-    return items.stream()
-        .map(LineItem::total)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    return items.stream().map(LineItem::total).reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 }

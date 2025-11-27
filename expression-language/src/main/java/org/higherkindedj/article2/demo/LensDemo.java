@@ -11,6 +11,7 @@ import org.higherkindedj.article2.optics.Lens;
  * Demonstrates lens operations from Article 2.
  *
  * <p>This demo shows:
+ *
  * <ul>
  *   <li>Basic lens operations: get, set, modify
  *   <li>Lens composition with andThen()
@@ -75,8 +76,7 @@ public final class LensDemo {
     System.out.println("MODIFY nested street: " + transformed.address().street());
 
     // Deeper composition: Employee → Address → City
-    Lens<Employee, String> employeeCity =
-        Employee.Lenses.address().andThen(Address.Lenses.city());
+    Lens<Employee, String> employeeCity = Employee.Lenses.address().andThen(Address.Lenses.city());
 
     Employee relocated = employeeCity.set("Manchester", employee);
     System.out.println("Relocated to: " + relocated.address().city());
@@ -106,7 +106,8 @@ public final class LensDemo {
     Address setTwice = streetLens.set(street2, streetLens.set(street1, address));
     Address setOnce = streetLens.set(street2, address);
     boolean setSetLaw = setTwice.equals(setOnce);
-    System.out.println("Set-Set Law: lens.set(a2, lens.set(a1, s)) == lens.set(a2, s) → " + setSetLaw);
+    System.out.println(
+        "Set-Set Law: lens.set(a2, lens.set(a1, s)) == lens.set(a2, s) → " + setSetLaw);
     System.out.println();
   }
 }

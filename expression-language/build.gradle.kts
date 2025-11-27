@@ -13,14 +13,6 @@ java {
     }
 }
 
-// Enable preview features for unnamed variables (_)
-tasks.withType<JavaCompile> {
-    options.compilerArgs.addAll(listOf("--enable-preview"))
-}
-
-tasks.withType<JavaExec> {
-    jvmArgs("--enable-preview")
-}
 
 application {
     mainClass.set("org.higherkindedj.article2.demo.Article2Demo")

@@ -2,11 +2,9 @@
 // Licensed under the MIT License. See LICENSE.md in the project root for license information.
 package org.higherkindedj.article2.demo;
 
-import java.util.List;
 import java.util.Optional;
 import org.higherkindedj.article2.optics.Lens;
 import org.higherkindedj.article2.optics.Prism;
-import org.higherkindedj.article2.optics.Traversal;
 
 /**
  * Preview of the Expression Language domain from Article 2.
@@ -19,7 +17,15 @@ public final class ExpressionPreviewDemo {
 
   /** Binary operators. */
   public enum BinaryOp {
-    ADD, SUB, MUL, DIV, EQ, LT, GT, AND, OR
+    ADD,
+    SUB,
+    MUL,
+    DIV,
+    EQ,
+    LT,
+    GT,
+    AND,
+    OR
   }
 
   /** The expression AST - a sealed interface with record variants. */
@@ -39,27 +45,20 @@ public final class ExpressionPreviewDemo {
       private Prisms() {}
 
       public static Prism<Expr, Literal> literal() {
-        return Prism.of(
-            e -> e instanceof Literal l ? Optional.of(l) : Optional.empty(),
-            l -> l);
+        return Prism.of(e -> e instanceof Literal l ? Optional.of(l) : Optional.empty(), l -> l);
       }
 
       public static Prism<Expr, Variable> variable() {
-        return Prism.of(
-            e -> e instanceof Variable v ? Optional.of(v) : Optional.empty(),
-            v -> v);
+        return Prism.of(e -> e instanceof Variable v ? Optional.of(v) : Optional.empty(), v -> v);
       }
 
       public static Prism<Expr, Binary> binary() {
-        return Prism.of(
-            e -> e instanceof Binary b ? Optional.of(b) : Optional.empty(),
-            b -> b);
+        return Prism.of(e -> e instanceof Binary b ? Optional.of(b) : Optional.empty(), b -> b);
       }
 
       public static Prism<Expr, Conditional> conditional() {
         return Prism.of(
-            e -> e instanceof Conditional c ? Optional.of(c) : Optional.empty(),
-            c -> c);
+            e -> e instanceof Conditional c ? Optional.of(c) : Optional.empty(), c -> c);
       }
     }
   }
@@ -131,27 +130,23 @@ public final class ExpressionPreviewDemo {
     System.out.println("--- Building Expressions ---\n");
 
     // 1 + 2
-    Expr simple = new Expr.Binary(
-        new Expr.Literal(1),
-        BinaryOp.ADD,
-        new Expr.Literal(2));
+    Expr simple = new Expr.Binary(new Expr.Literal(1), BinaryOp.ADD, new Expr.Literal(2));
     System.out.println("1 + 2: " + format(simple));
 
     // x * (y + 1)
-    Expr nested = new Expr.Binary(
-        new Expr.Variable("x"),
-        BinaryOp.MUL,
+    Expr nested =
         new Expr.Binary(
-            new Expr.Variable("y"),
-            BinaryOp.ADD,
-            new Expr.Literal(1)));
+            new Expr.Variable("x"),
+            BinaryOp.MUL,
+            new Expr.Binary(new Expr.Variable("y"), BinaryOp.ADD, new Expr.Literal(1)));
     System.out.println("x * (y + 1): " + format(nested));
 
     // if (x > 0) then x else -x
-    Expr conditional = new Expr.Conditional(
-        new Expr.Binary(new Expr.Variable("x"), BinaryOp.GT, new Expr.Literal(0)),
-        new Expr.Variable("x"),
-        new Expr.Binary(new Expr.Literal(0), BinaryOp.SUB, new Expr.Variable("x")));
+    Expr conditional =
+        new Expr.Conditional(
+            new Expr.Binary(new Expr.Variable("x"), BinaryOp.GT, new Expr.Literal(0)),
+            new Expr.Variable("x"),
+            new Expr.Binary(new Expr.Literal(0), BinaryOp.SUB, new Expr.Variable("x")));
     System.out.println("if (x > 0) then x else -x: " + format(conditional));
     System.out.println();
   }
@@ -185,10 +180,7 @@ public final class ExpressionPreviewDemo {
     System.out.println("--- Basic Transformations ---\n");
 
     // x + y
-    Expr expr = new Expr.Binary(
-        new Expr.Variable("x"),
-        BinaryOp.ADD,
-        new Expr.Variable("y"));
+    Expr expr = new Expr.Binary(new Expr.Variable("x"), BinaryOp.ADD, new Expr.Variable("y"));
 
     System.out.println("Original: " + format(expr));
 
@@ -197,9 +189,8 @@ public final class ExpressionPreviewDemo {
     Lens<Expr.Variable, String> nameLens = VariableLenses.name();
 
     // This only renames top-level variables (we'll do recursive traversal in Article 3)
-    Expr renamed = variablePrism.modify(
-        v -> v.name().equals("x") ? new Expr.Variable("a") : v,
-        expr);
+    Expr renamed =
+        variablePrism.modify(v -> v.name().equals("x") ? new Expr.Variable("a") : v, expr);
     System.out.println("After renaming x→a (top-level only): " + format(renamed));
 
     // Constant folding preview: 1 + 2 → 3
@@ -222,13 +213,14 @@ public final class ExpressionPreviewDemo {
         && lv instanceof Integer li
         && rv instanceof Integer ri) {
 
-      Integer result = switch (binary.op()) {
-        case ADD -> li + ri;
-        case SUB -> li - ri;
-        case MUL -> li * ri;
-        case DIV -> ri != 0 ? li / ri : null;
-        default -> null;
-      };
+      Integer result =
+          switch (binary.op()) {
+            case ADD -> li + ri;
+            case SUB -> li - ri;
+            case MUL -> li * ri;
+            case DIV -> ri != 0 ? li / ri : null;
+            default -> null;
+          };
 
       if (result != null) {
         // Return a "folded" binary that will be recognized as constant
