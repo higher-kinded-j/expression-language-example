@@ -2,98 +2,106 @@
 // Licensed under the MIT License. See LICENSE.md in the project root for license information.
 package org.higherkindedj.article4.traversal;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Function;
 import org.higherkindedj.article4.ast.Expr;
 import org.higherkindedj.article4.ast.Expr.Binary;
 import org.higherkindedj.article4.ast.Expr.Conditional;
 import org.higherkindedj.article4.ast.Expr.Literal;
 import org.higherkindedj.article4.ast.Expr.Variable;
+import org.higherkindedj.hkt.Applicative;
+import org.higherkindedj.hkt.Kind;
+import org.higherkindedj.optics.Traversal;
+import org.higherkindedj.optics.util.Traversals;
 
 /**
- * Traversal utilities for the expression AST.
+ * Traversals for the expression AST using higher-kinded-j.
  *
- * <p>This class provides methods for traversing and transforming expression trees:
+ * <p>This class provides {@link Traversal} implementations for working with expression trees. The
+ * traversals are effect-polymorphic, meaning the same traversal can be used with different
+ * computational contexts via the {@code modifyF} method:
  *
  * <ul>
- *   <li>Getting immediate children of an expression
- *   <li>Bottom-up and top-down tree transformations
- *   <li>Collecting all nodes in a tree
+ *   <li>Pure transformations with Identity
+ *   <li>Fallible transformations with Optional or Either
+ *   <li>Error-accumulating transformations with Validated
  * </ul>
  *
- * <p>These utilities demonstrate functional tree manipulation patterns that work well with
- * immutable ASTs built using Java records and sealed interfaces.
+ * <p>The key operations are:
+ *
+ * <ul>
+ *   <li>{@link Traversals#getAll} — extract all focused elements
+ *   <li>{@link Traversals#modify} — apply a pure transformation to all focused elements
+ *   <li>{@link Traversal#modifyF} — apply an effectful transformation
+ * </ul>
  */
 public final class ExprTraversal {
 
   private ExprTraversal() {}
 
   /**
-   * Get all immediate children of an expression.
+   * A traversal targeting all immediate children of an expression.
    *
-   * <p>This method does not descend recursively—it only returns direct children:
+   * <p>This traversal does not descend recursively—it only visits direct children:
    *
    * <ul>
-   *   <li>{@link Literal} and {@link Variable} have no children
+   *   <li>{@link Literal} and {@link Variable} have no children (zero elements)
    *   <li>{@link Binary} has two children: left and right
    *   <li>{@link Conditional} has three children: cond, thenBranch, elseBranch
    * </ul>
    *
-   * @param expr the expression to get children from
-   * @return a list of immediate child expressions
+   * <p>The traversal is effect-polymorphic: use {@code modifyF} with any {@code Applicative} to
+   * perform effectful transformations over all children.
+   *
+   * @return a traversal over immediate child expressions
    */
-  public static List<Expr> getChildren(Expr expr) {
-    return switch (expr) {
-      case Literal _, Variable _ -> List.of();
-      case Binary(var l, _, var r) -> List.of(l, r);
-      case Conditional(var c, var t, var e) -> List.of(c, t, e);
+  public static Traversal<Expr, Expr> children() {
+    return new Traversal<>() {
+      @Override
+      public <F> Kind<F, Expr> modifyF(
+          Function<Expr, Kind<F, Expr>> f, Expr source, Applicative<F> applicative) {
+        return switch (source) {
+          case Literal _ -> applicative.of(source);
+          case Variable _ -> applicative.of(source);
+          case Binary(var l, var op, var r) ->
+              applicative.map2(f.apply(l), f.apply(r), (newL, newR) -> new Binary(newL, op, newR));
+          case Conditional(var c, var t, var e) ->
+              applicative.map3(
+                  f.apply(c),
+                  f.apply(t),
+                  f.apply(e),
+                  (newC, newT, newE) -> new Conditional(newC, newT, newE));
+        };
+      }
     };
   }
 
   /**
-   * Modify all immediate children of an expression.
+   * A traversal targeting all descendant expressions (including the root).
    *
-   * @param expr the expression to modify
-   * @param f the transformation function to apply to each child
-   * @return a new expression with transformed children
+   * <p>This traversal visits every node in the expression tree using bottom-up order: children are
+   * processed before their parents.
+   *
+   * @return a traversal over all expressions in the tree
    */
-  public static Expr modifyChildren(Expr expr, Function<Expr, Expr> f) {
-    return switch (expr) {
-      case Literal _ -> expr;
-      case Variable _ -> expr;
-      case Binary(var l, var op, var r) -> new Binary(f.apply(l), op, f.apply(r));
-      case Conditional(var c, var t, var e) ->
-          new Conditional(f.apply(c), f.apply(t), f.apply(e));
+  public static Traversal<Expr, Expr> allDescendants() {
+    return new Traversal<>() {
+      @Override
+      public <F> Kind<F, Expr> modifyF(
+          Function<Expr, Kind<F, Expr>> f, Expr source, Applicative<F> applicative) {
+        // Bottom-up: first transform children, then this node
+        Kind<F, Expr> withChildrenTransformed =
+            children().modifyF(child -> this.modifyF(f, child, applicative), source, applicative);
+        // Use Applicative.flatMap if available (Monad), otherwise use map + join pattern
+        return applicative.flatMap(withChildrenTransformed, f);
+      }
     };
-  }
-
-  /**
-   * Collect all nodes in the expression tree.
-   *
-   * <p>Returns all nodes including the root, in depth-first pre-order.
-   *
-   * @param expr the root expression
-   * @return a list of all expressions in the tree
-   */
-  public static List<Expr> getAllNodes(Expr expr) {
-    List<Expr> results = new ArrayList<>();
-    collectAll(expr, results);
-    return results;
-  }
-
-  private static void collectAll(Expr expr, List<Expr> accumulator) {
-    accumulator.add(expr);
-    for (Expr child : getChildren(expr)) {
-      collectAll(child, accumulator);
-    }
   }
 
   /**
    * Transform all nodes in the tree from leaves to root (bottom-up).
    *
-   * <p>Each node is transformed after its children have been transformed. This is useful for
-   * optimisations that need to see the results of transforming sub-expressions first.
+   * <p>This is a convenience method for pure transformations. Each node is transformed after its
+   * children have been transformed.
    *
    * @param expr the expression to transform
    * @param f the transformation function
@@ -101,7 +109,7 @@ public final class ExprTraversal {
    */
   public static Expr transformBottomUp(Expr expr, Function<Expr, Expr> f) {
     // First transform all children
-    Expr transformed = modifyChildren(expr, child -> transformBottomUp(child, f));
+    Expr transformed = Traversals.modify(children(), f.compose(e -> transformBottomUp(e, f)), expr);
     // Then transform this node
     return f.apply(transformed);
   }
@@ -109,8 +117,7 @@ public final class ExprTraversal {
   /**
    * Transform all nodes in the tree from root to leaves (top-down).
    *
-   * <p>Each node is transformed before its children are visited. This is useful for macro
-   * expansion or early rewriting where the transformation might change the structure.
+   * <p>Each node is transformed before its children are visited.
    *
    * @param expr the expression to transform
    * @param f the transformation function
@@ -120,6 +127,6 @@ public final class ExprTraversal {
     // First transform this node
     Expr transformed = f.apply(expr);
     // Then transform all children
-    return modifyChildren(transformed, child -> transformTopDown(child, f));
+    return Traversals.modify(children(), child -> transformTopDown(child, f), transformed);
   }
 }
