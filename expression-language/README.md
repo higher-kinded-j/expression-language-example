@@ -64,27 +64,26 @@ src/main/java/org/higherkindedj/article1/
 ## Building
 
 ```bash
-export JAVA_HOME=/opt/jdk24  # or wherever JDK 24 is installed
 gradle compileJava
 ```
 
 ## JDK Requirements
 
-This project uses **JDK 24** (Temurin/Adoptium). The manual lens implementations
-demonstrate the concepts that higher-kinded-j would auto-generate with `@GenerateLenses`.
+This project uses **JDK 25** with the higher-kinded-j library (version 0.2.2-SNAPSHOT).
 
-When Maven Central is accessible, uncomment the dependencies in `build.gradle.kts`
-to use the full higher-kinded-j library with annotation processing.
+Features used:
+- Unnamed variables (`_`) in lambda expressions
+- Record patterns in switch expressions
+- Sealed interfaces
+
+The manual lens implementations demonstrate the concepts that higher-kinded-j auto-generates with `@GenerateLenses`.
 
 ## Spotless Configuration
 
-The project includes Spotless configuration matching higher-kinded-j's style:
+The project uses Spotless for code formatting matching higher-kinded-j's style:
 - Google Java Format
 - MIT License headers
 - Unix line endings
-
-Enable by uncommenting the Spotless plugin in `build.gradle.kts` when the
-Gradle Plugin Portal is accessible.
 
 ## What's Next
 
