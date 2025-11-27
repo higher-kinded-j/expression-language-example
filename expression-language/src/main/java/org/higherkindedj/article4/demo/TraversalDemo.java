@@ -15,7 +15,7 @@ import org.higherkindedj.article4.ast.Expr.Variable;
 import org.higherkindedj.article4.traversal.ExprFold;
 import org.higherkindedj.article4.traversal.ExprTraversal;
 import org.higherkindedj.article4.traversal.NodeCounts;
-import org.higherkindedj.hkj.optics.Traversal;
+import org.higherkindedj.optics.Traversal;
 
 /**
  * Demonstrates traversals for expression trees from Article 4.

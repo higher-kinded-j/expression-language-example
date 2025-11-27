@@ -10,9 +10,9 @@ import org.higherkindedj.article4.ast.Expr.Binary;
 import org.higherkindedj.article4.ast.Expr.Conditional;
 import org.higherkindedj.article4.ast.Expr.Literal;
 import org.higherkindedj.article4.ast.Expr.Variable;
-import org.higherkindedj.hkj.Kind;
-import org.higherkindedj.hkj.optics.Traversal;
-import org.higherkindedj.hkj.typeclass.Applicative;
+import org.higherkindedj.hkt.Kind;
+import org.higherkindedj.optics.Traversal;
+import org.higherkindedj.typeclass.Applicative;
 
 /**
  * Traversals for the expression AST using higher-kinded-j.

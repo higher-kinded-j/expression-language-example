@@ -11,9 +11,9 @@ import org.higherkindedj.article3.ast.Expr.Literal;
 import org.higherkindedj.article3.ast.Expr.Variable;
 import org.higherkindedj.article3.ast.ExprPrisms;
 import org.higherkindedj.article3.ast.LiteralLenses;
-import org.higherkindedj.hkj.optics.Affine;
-import org.higherkindedj.hkj.optics.Lens;
-import org.higherkindedj.hkj.optics.Prism;
+import org.higherkindedj.optics.Affine;
+import org.higherkindedj.optics.Lens;
+import org.higherkindedj.optics.Prism;
 
 /**
  * Demonstrates the Expression AST and basic optics from Article 3.

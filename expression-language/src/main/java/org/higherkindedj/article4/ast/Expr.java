@@ -2,8 +2,8 @@
 // Licensed under the MIT License. See LICENSE.md in the project root for license information.
 package org.higherkindedj.article4.ast;
 
-import org.higherkindedj.hkj.optics.annotations.GenerateLenses;
-import org.higherkindedj.hkj.optics.annotations.GeneratePrisms;
+import org.higherkindedj.optics.annotations.GenerateLenses;
+import org.higherkindedj.optics.annotations.GeneratePrisms;
 
 /**
  * The expression AST for the expression language.
