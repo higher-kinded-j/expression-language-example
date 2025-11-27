@@ -15,7 +15,6 @@ import org.higherkindedj.article4.ast.Expr.Variable;
 import org.higherkindedj.article4.traversal.ExprFold;
 import org.higherkindedj.article4.traversal.ExprTraversal;
 import org.higherkindedj.article4.traversal.NodeCounts;
-import org.higherkindedj.optics.Traversal;
 
 /**
  * Demonstrates traversals for expression trees from Article 4.
@@ -23,15 +22,14 @@ import org.higherkindedj.optics.Traversal;
  * <p>This demo shows:
  *
  * <ul>
- *   <li>Using the children() traversal for immediate children
+ *   <li>Getting and modifying immediate children of expressions
  *   <li>Bottom-up and top-down tree transformations
  *   <li>Collecting information with folds
  *   <li>Finding variables, operators, and common subexpressions
- *   <li>Effect-polymorphic traversals with higher-kinded-j
  * </ul>
  *
- * <p>The traversals use higher-kinded-j's {@code Traversal} type with effect-polymorphic {@code
- * modifyF} method.
+ * <p>The traversal utilities demonstrate functional tree manipulation patterns that work well with
+ * immutable ASTs built using Java records and sealed interfaces.
  */
 public final class TraversalDemo {
 
@@ -46,30 +44,28 @@ public final class TraversalDemo {
   }
 
   private static void childrenTraversal() {
-    System.out.println("--- Children Traversal (higher-kinded-j) ---\n");
-
-    // This traversal is effect-polymorphic - same traversal works with different effects
-    Traversal<Expr, Expr> children = ExprTraversal.children();
+    System.out.println("--- Children Traversal ---\n");
 
     // A literal has no children
     Expr lit = new Literal(42);
-    System.out.println("Literal 42 children: " + children.getAll(lit));
+    System.out.println("Literal 42 children: " + ExprTraversal.getChildren(lit));
 
     // A variable has no children
     Expr var = new Variable("x");
-    System.out.println("Variable x children: " + children.getAll(var));
+    System.out.println("Variable x children: " + ExprTraversal.getChildren(var));
 
     // A binary has two children
     Expr bin = new Binary(new Variable("a"), ADD, new Literal(1));
-    System.out.println("Binary (a + 1) children: " + formatExprs(children.getAll(bin)));
+    System.out.println("Binary (a + 1) children: " + formatExprs(ExprTraversal.getChildren(bin)));
 
     // A conditional has three children
     Expr cond = new Conditional(new Variable("flag"), new Literal(1), new Literal(0));
     System.out.println(
-        "Conditional (if flag then 1 else 0) children: " + formatExprs(children.getAll(cond)));
+        "Conditional (if flag then 1 else 0) children: "
+            + formatExprs(ExprTraversal.getChildren(cond)));
 
     // Modify children of a binary expression
-    Expr modified = children.modify(e -> new Binary(e, MUL, new Literal(2)), bin);
+    Expr modified = ExprTraversal.modifyChildren(bin, e -> new Binary(e, MUL, new Literal(2)));
     System.out.println("\nModify children of (a + 1) by wrapping in (* 2):");
     System.out.println("  Before: " + bin.format());
     System.out.println("  After:  " + modified.format());

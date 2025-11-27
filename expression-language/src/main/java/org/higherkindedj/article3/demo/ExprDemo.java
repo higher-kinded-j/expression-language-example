@@ -14,6 +14,7 @@ import org.higherkindedj.article3.ast.LiteralLenses;
 import org.higherkindedj.optics.Lens;
 import org.higherkindedj.optics.Prism;
 import org.higherkindedj.optics.Traversal;
+import org.higherkindedj.optics.util.Traversals;
 
 /**
  * Demonstrates the Expression AST and basic optics from Article 3.
@@ -100,8 +101,8 @@ public final class ExprDemo {
         "\nExtract Literal from 42: " + literalPrism.getOptional(lit).map(Literal::value));
     System.out.println("Extract Binary from 42: " + binaryPrism.getOptional(lit).map(Binary::op));
 
-    // reverseGet() - construct an Expr from a variant
-    Expr newLit = literalPrism.reverseGet(new Literal(100));
+    // build() - construct an Expr from a variant
+    Expr newLit = literalPrism.build(new Literal(100));
     System.out.println("\nBuilt from Literal: " + newLit.format());
 
     // modify() - transform if the variant matches
@@ -126,10 +127,10 @@ public final class ExprDemo {
     Expr lit = new Literal(42);
     Expr var = new Variable("x");
 
-    System.out.println("Get value from Literal 42: " + literalValue.getAll(lit));
-    System.out.println("Get value from Variable x: " + literalValue.getAll(var));
+    System.out.println("Get value from Literal 42: " + Traversals.getAll(literalValue, lit));
+    System.out.println("Get value from Variable x: " + Traversals.getAll(literalValue, var));
 
-    Expr updated = literalValue.modify(_ -> 100, lit);
+    Expr updated = Traversals.modify(literalValue, _ -> 100, lit);
     System.out.println("Set value to 100: " + updated.format());
 
     // Compose: Expr → Binary → Expr (left operand)
@@ -140,12 +141,12 @@ public final class ExprDemo {
 
     Expr bin = new Binary(new Literal(1), BinaryOp.ADD, new Literal(2));
 
-    System.out.println("\nGet left from 1+2: " + binaryLeft.getAll(bin).stream().map(Expr::format).toList());
-    System.out.println("Get left from Literal 42: " + binaryLeft.getAll(lit));
+    System.out.println("\nGet left from 1+2: " + Traversals.getAll(binaryLeft, bin).stream().map(Expr::format).toList());
+    System.out.println("Get left from Literal 42: " + Traversals.getAll(binaryLeft, lit));
 
     // Modify the left operand
     Expr withNewLeft =
-        binaryLeft.modify(left -> new Binary(left, BinaryOp.MUL, new Literal(10)), bin);
+        Traversals.modify(binaryLeft, left -> new Binary(left, BinaryOp.MUL, new Literal(10)), bin);
     System.out.println("Replace left with (left * 10): " + withNewLeft.format());
     System.out.println();
   }
