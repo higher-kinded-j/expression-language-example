@@ -32,8 +32,9 @@ dependencies {
     // Core library with optics
     implementation("io.github.higher-kinded-j:hkj-core:$hkjVersion")
 
-    // Annotation processor for lens/prism generation
+    // Annotation processors for lens/prism generation
     annotationProcessor("io.github.higher-kinded-j:hkj-processor:$hkjVersion")
+    annotationProcessor("io.github.higher-kinded-j:hkj-processor-plugins:$hkjVersion")
 }
 
 java {
@@ -78,6 +79,11 @@ java {
                     <path>
                         <groupId>io.github.higher-kinded-j</groupId>
                         <artifactId>hkj-processor</artifactId>
+                        <version>${hkj.version}</version>
+                    </path>
+                    <path>
+                        <groupId>io.github.higher-kinded-j</groupId>
+                        <artifactId>hkj-processor-plugins</artifactId>
                         <version>${hkj.version}</version>
                     </path>
                 </annotationProcessorPaths>
