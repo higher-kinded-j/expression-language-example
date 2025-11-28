@@ -21,20 +21,25 @@ plugins {
 
 repositories {
     mavenCentral()
+    maven {
+        url = uri("https://central.sonatype.com/repository/maven-snapshots/")
+    }
 }
 
-dependencies {
-    // Core optics library
-    implementation("org.higherkindedj:hkj-optics:2.0.0")
+val hkjVersion = "0.2.2-SNAPSHOT"
 
-    // Annotation processor for lens/prism generation
-    annotationProcessor("org.higherkindedj:hkj-optics-processor:2.0.0")
-    compileOnly("org.higherkindedj:hkj-optics-annotations:2.0.0")
+dependencies {
+    // Core library with optics
+    implementation("io.github.higher-kinded-j:hkj-core:$hkjVersion")
+
+    // Annotation processors for lens/prism generation
+    annotationProcessor("io.github.higher-kinded-j:hkj-processor:$hkjVersion")
+    annotationProcessor("io.github.higher-kinded-j:hkj-processor-plugins:$hkjVersion")
 }
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(24))
+        languageVersion.set(JavaLanguageVersion.of(25))
     }
 }
 ```
@@ -42,17 +47,25 @@ java {
 ### Maven Configuration
 
 ```xml
+<repositories>
+    <repository>
+        <id>sonatype-snapshots</id>
+        <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+        <snapshots>
+            <enabled>true</enabled>
+        </snapshots>
+    </repository>
+</repositories>
+
+<properties>
+    <hkj.version>0.2.2-SNAPSHOT</hkj.version>
+</properties>
+
 <dependencies>
     <dependency>
-        <groupId>org.higherkindedj</groupId>
-        <artifactId>hkj-optics</artifactId>
-        <version>2.0.0</version>
-    </dependency>
-    <dependency>
-        <groupId>org.higherkindedj</groupId>
-        <artifactId>hkj-optics-annotations</artifactId>
-        <version>2.0.0</version>
-        <scope>provided</scope>
+        <groupId>io.github.higher-kinded-j</groupId>
+        <artifactId>hkj-core</artifactId>
+        <version>${hkj.version}</version>
     </dependency>
 </dependencies>
 
@@ -64,9 +77,14 @@ java {
             <configuration>
                 <annotationProcessorPaths>
                     <path>
-                        <groupId>org.higherkindedj</groupId>
-                        <artifactId>hkj-optics-processor</artifactId>
-                        <version>2.0.0</version>
+                        <groupId>io.github.higher-kinded-j</groupId>
+                        <artifactId>hkj-processor</artifactId>
+                        <version>${hkj.version}</version>
+                    </path>
+                    <path>
+                        <groupId>io.github.higher-kinded-j</groupId>
+                        <artifactId>hkj-processor-plugins</artifactId>
+                        <version>${hkj.version}</version>
                     </path>
                 </annotationProcessorPaths>
             </configuration>
@@ -257,17 +275,18 @@ Prisms compose with lenses to reach into variant-specific fields:
 Prism<Shape, Circle> circlePrism = ShapePrisms.circle();
 Lens<Circle, Double> radiusLens = CircleLenses.radius();
 
-// Compose into an Optional (affine)
-Optional<Shape, Double> shapeRadius = circlePrism.andThen(radiusLens);
+// Compose into a Traversal (zero or one focus)
+Traversal<Shape, Double> shapeRadius =
+    circlePrism.asTraversal().andThen(radiusLens.asTraversal());
 
-// Get the radius if it's a circle
-Optional<Double> radius = shapeRadius.getOptional(shape);
+// Get the radius if it's a circle (returns a list with 0 or 1 element)
+List<Double> radii = Traversals.getAll(shapeRadius, shape);
 
 // Double the radius if it's a circle
-Shape modified = shapeRadius.modify(r -> r * 2, shape);
+Shape modified = Traversals.modify(shapeRadius, r -> r * 2, shape);
 ```
 
-Notice the type: composing a `Prism` with a `Lens` yields an `Optional` (sometimes called an affine traversal). This reflects the reality: we might not find anything to focus on.
+Notice the type: composing a `Prism` with a `Lens` yields a `Traversal`. This reflects the reality: we might find zero elements (if it's not a circle) or one element (if it is). The traversal handles both cases elegantly.
 
 ### Pattern: Type-Safe Downcasting
 
@@ -302,11 +321,11 @@ Traversal<List<String>, String> listTraversal = Traversals.list();
 List<String> names = List.of("alice", "bob", "charlie");
 
 // Modify all elements
-List<String> uppercased = listTraversal.modify(String::toUpperCase, names);
+List<String> uppercased = Traversals.modify(listTraversal, String::toUpperCase, names);
 // ["ALICE", "BOB", "CHARLIE"]
 
 // Get all elements (as a list)
-List<String> all = listTraversal.getAll(names);
+List<String> all = Traversals.getAll(listTraversal, names);
 // ["alice", "bob", "charlie"]
 ```
 
@@ -328,17 +347,18 @@ Lens<Employee, Address> addressLens = EmployeeLenses.address();
 Lens<Address, String> streetLens = AddressLenses.street();
 
 // Compose them all: Department → each employee's street
+// Note: we convert lenses to traversals with asTraversal() before composing
 Traversal<Department, String> allStaffStreets =
-    staffLens
+    staffLens.asTraversal()
         .andThen(eachEmployee)
-        .andThen(addressLens)
-        .andThen(streetLens);
+        .andThen(addressLens.asTraversal())
+        .andThen(streetLens.asTraversal());
 
 // Update every staff member's street
-Department updated = allStaffStreets.modify(s -> s + " (relocated)", dept);
+Department updated = Traversals.modify(allStaffStreets, s -> s + " (relocated)", dept);
 
 // Collect all streets
-List<String> streets = allStaffStreets.getAll(dept);
+List<String> streets = Traversals.getAll(allStaffStreets, dept);
 ```
 
 One composed traversal replaces what would otherwise be nested loops with manual reconstruction at each level.
@@ -354,8 +374,9 @@ Traversal<List<Employee>, Employee> londonStaff =
         .filtered(e -> e.address().city().equals("London"));
 
 // Give London staff a raise
-List<Employee> updated = londonStaff.modify(
-    e -> new Employee(e.id(), e.name(), e.address(), e.salary() * 1.1),
+List<Employee> updated = Traversals.modify(
+    londonStaff,
+    e -> new Employee(e.id(), e.name(), e.address(), e.salary().multiply(new BigDecimal("1.1"))),
     employees
 );
 ```
@@ -364,34 +385,43 @@ Filters compose naturally with other optics, enabling precise targeting deep wit
 
 ### Aggregation with Folds
 
-Traversals support folding—aggregating all focused values into a single result:
+Traversals support folding—aggregating all focused values into a single result. If you've used Java's `Stream.reduce()`, you already understand the core idea.
+
+**What is a Fold?** A fold combines multiple values into one. Java developers use this pattern constantly:
 
 ```java
-// Sum all salaries in a department
-double totalSalary = allStaffSalaries.foldMap(
-    Double::sum,
-    0.0,
-    department
-);
-
-// Count employees
-int count = eachEmployee.foldMap(
-    (a, b) -> a + b,
-    0,
-    e -> 1,
-    department.staff()
-);
-
-// Collect into a set
-Set<String> uniqueCities = allStaffCities.foldMap(
-    Sets::union,
-    Set.of(),
-    Set::of,
-    department
-);
+// This is a fold using Stream API
+int sum = numbers.stream().reduce(0, Integer::sum);
 ```
 
-The `foldMap` operation generalises collection: any monoid (a type with an associative binary operation and identity) works.
+Optics bring this same power to nested structures. The `Traversals` utility class provides folding operations:
+
+```java
+// Collect all focused values into a list
+List<Double> allSalaries = Traversals.getAll(allStaffSalaries, department);
+
+// Then use standard Java to aggregate
+double totalSalary = allSalaries.stream()
+    .reduce(0.0, Double::sum);
+
+// Or count elements
+long count = allSalaries.size();
+
+// Or collect unique values
+Set<String> uniqueCities = Traversals.getAll(allStaffCities, department)
+    .stream()
+    .collect(Collectors.toSet());
+```
+
+**Understanding Monoids (the Java way):** The term "monoid" might sound intimidating, but you use them daily:
+
+- **Addition**: combine with `+`, start with `0`
+- **Multiplication**: combine with `*`, start with `1`
+- **String concatenation**: combine with `+`, start with `""`
+- **List concatenation**: combine with `addAll`, start with empty list
+- **Set union**: combine with `union`, start with empty set
+
+A monoid is simply: (1) a way to combine two values, and (2) an "empty" starting value. That's exactly what `Stream.reduce(identity, combiner)` expects! When the documentation mentions monoids, think "something I can reduce over".
 
 ---
 
@@ -402,16 +432,18 @@ Understanding how optics compose is essential for effective use. Here's the comp
 | First | Second | Result |
 |-------|--------|--------|
 | Lens | Lens | Lens |
-| Lens | Prism | Optional |
+| Lens | Prism | Traversal |
 | Lens | Traversal | Traversal |
-| Prism | Lens | Optional |
+| Prism | Lens | Traversal |
 | Prism | Prism | Prism |
 | Prism | Traversal | Traversal |
 | Traversal | Lens | Traversal |
 | Traversal | Prism | Traversal |
 | Traversal | Traversal | Traversal |
 
-The pattern: composing with something "weaker" (that might not find anything, or might find many things) yields the weaker type.
+The pattern: composing with something "weaker" (that might not find anything, or might find many things) yields a `Traversal`. In higher-kinded-j, we use `asTraversal()` to convert lenses and prisms before composing them with `andThen()`.
+
+**Why Traversal?** You might wonder why `Prism + Lens` doesn't yield some special "zero-or-one" type. In practice, a `Traversal` that focuses on at most one element works identically—and the simpler type hierarchy means fewer concepts to learn. The `Traversals.getAll()` method returns a list that will have 0, 1, or many elements depending on the composed optics.
 
 ### Building Deep Paths
 
@@ -425,14 +457,14 @@ In practice, you'll build paths incrementally:
 // → city (lens to string)
 
 Traversal<Company, String> allManagerCities =
-    CompanyLenses.departments()
+    CompanyLenses.departments().asTraversal()
         .andThen(Traversals.list())
-        .andThen(DepartmentLenses.manager())
-        .andThen(EmployeeLenses.address())
-        .andThen(AddressLenses.city());
+        .andThen(DepartmentLenses.manager().asTraversal())
+        .andThen(EmployeeLenses.address().asTraversal())
+        .andThen(AddressLenses.city().asTraversal());
 
 // Relocate all managers to Manchester
-Company relocated = allManagerCities.modify(_ -> "Manchester", company);
+Company relocated = Traversals.modify(allManagerCities, _ -> "Manchester", company);
 ```
 
 ### Real-World Example: Updating Nested Orders
@@ -457,20 +489,21 @@ To apply a 10% discount to all items across all orders for a customer:
 
 // Optics approach: define the path once
 Traversal<Customer, BigDecimal> allItemPrices =
-    CustomerLenses.orders()
+    CustomerLenses.orders().asTraversal()
         .andThen(Traversals.list())
-        .andThen(OrderLenses.items())
+        .andThen(OrderLenses.items().asTraversal())
         .andThen(Traversals.list())
-        .andThen(LineItemLenses.price());
+        .andThen(LineItemLenses.price().asTraversal());
 
 // Apply discount
-Customer discounted = allItemPrices.modify(
+Customer discounted = Traversals.modify(
+    allItemPrices,
     price -> price.multiply(new BigDecimal("0.90")),
     customer
 );
 ```
 
-The path is declarative and reusable. Need to calculate the total value? Use the same path with `foldMap`.
+The path is declarative and reusable. Need to calculate the total value? Use the same path with `Traversals.getAll()` and standard Java streams.
 
 ---
 
