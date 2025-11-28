@@ -30,9 +30,10 @@ repositories {
 val hkjVersion = "0.2.2-SNAPSHOT"
 
 dependencies {
-    // Higher-Kinded-J - uncomment when Maven Central is accessible
-     implementation("io.github.higher-kinded-j:hkj-core:$hkjVersion")
-     annotationProcessor("io.github.higher-kinded-j:hkj-processor:$hkjVersion")
+    // Higher-Kinded-J
+    implementation("io.github.higher-kinded-j:hkj-core:$hkjVersion")
+    annotationProcessor("io.github.higher-kinded-j:hkj-processor:$hkjVersion")
+    annotationProcessor("io.github.higher-kinded-j:hkj-processor-plugins:$hkjVersion")
 
 
      testImplementation(platform("org.junit:junit-bom:5.13.0"))
