@@ -8,12 +8,12 @@ This branch contains the companion code for Article 4 of the "Functional Optics 
 
 Building on the foundation from Articles 1-3, this branch adds:
 
-- **Traversal type** — Focus on zero or more elements within a structure
-- **Expression traversals** — Visit all children or all descendants of an expression
-- **Bottom-up and top-down transforms** — Recursive tree transformations with controlled ordering
-- **Fold utilities** — Collect information from the entire tree (variables, operators, counts)
-- **Enhanced optimiser** — Multiple passes using traversal-based transformations
-- **Common subexpression detection** — Find repeated patterns for potential optimisation
+- **Traversal type**: Focus on zero or more elements within a structure
+- **Expression traversals**: Visit all children or all descendants of an expression
+- **Bottom-up and top-down transforms**: Recursive tree transformations with controlled ordering
+- **Fold utilities**: Collect information from the entire tree (variables, operators, counts)
+- **Enhanced optimiser**: Multiple passes using traversal-based transformations
+- **Common subexpression detection**: Find repeated patterns for potential optimisation
 
 ## Running the Demos
 
@@ -23,8 +23,8 @@ gradle run
 
 This runs all Article 4 demonstrations:
 
-1. **TraversalDemo** — Children traversal, bottom-up/top-down transforms, information collection
-2. **OptimiserDemo** — Constant folding, identity simplification, cascading optimisation
+1. **TraversalDemo**: Children traversal, bottom-up/top-down transforms, information collection
+2. **OptimiserDemo**: Constant folding, identity simplification, cascading optimisation
 
 ## Key Concepts Introduced
 
@@ -58,6 +58,17 @@ Expr result = ExprTraversal.transformBottomUp(expr, transform);
 Expr result = ExprTraversal.transformTopDown(expr, transform);
 ```
 
+### Composition Table
+
+| First | Second | Result |
+|-------|--------|--------|
+| Lens | Lens | Lens |
+| Lens | Prism | Traversal |
+| Lens | Traversal | Traversal |
+| Prism | Lens | Traversal |
+| Prism | Prism | Prism |
+| Traversal | * | Traversal |
+
 ### Fold Utilities
 
 ```java
@@ -81,9 +92,9 @@ boolean isConst = ExprFold.isConstant(expr);
 
 The optimiser runs multiple passes to fixed point:
 
-1. **Constant folding** — `1 + 2` → `3`
-2. **Identity simplification** — `x + 0` → `x`, `x * 1` → `x`
-3. **Dead branch elimination** — `if true then a else b` → `a`
+1. **Constant folding**: `1 + 2` → `3`
+2. **Identity simplification**: `x + 0` → `x`, `x * 1` → `x`
+3. **Dead branch elimination**: `if true then a else b` → `a`
 
 ```java
 Expr optimised = ExprOptimiser.optimise(expr);
@@ -134,11 +145,21 @@ gradle compileJava
 
 This project uses **JDK 25** with the higher-kinded-j library (version 0.2.2-SNAPSHOT).
 
-Features used:
-- Unnamed variables (`_`) in lambda expressions and patterns
-- Record patterns in switch expressions
-- Sealed interfaces
-- Pattern matching with guards (`when` clauses)
+Java 25 features used:
+- **Switch expressions with record patterns**: Nested deconstruction
+- **Pattern guards (`when` clauses)**: Conditional pattern matching
+- **Multi-pattern cases**: `case A, B -> ...`
+- **Unnamed patterns (`_`)**: Ignore unneeded components
+- **Sealed interfaces**: Exhaustiveness checking
+
+The optics implementations simulate what Higher-Kinded-J auto-generates with `@GenerateLenses` and `@GeneratePrisms`.
+
+## Spotless Configuration
+
+The project uses Spotless for code formatting matching Higher-Kinded-J's style:
+- Google Java Format
+- MIT License headers
+- Unix line endings
 
 ## What's Next
 
@@ -148,8 +169,10 @@ Article 5 will introduce effect-polymorphic operations:
 - The Free monad DSL for composable transformations
 - The same traversals working with different computational effects
 
+Higher-Kinded-J's optics generation will be central to this work, enabling us to navigate and transform the AST with minimal boilerplate. The `@GeneratePrisms` annotation on our sealed `Expr` interface will generate type-safe accessors for each variant, whilst `@GenerateLenses` on the records will provide field access. Together, they compose into powerful traversals that can reach any part of the expression tree.
+
 ## Previous Articles
 
-- [Article 1: The Immutability Gap](docs/article-1-the-immutability-gap.md) — Problem and basic solution
-- [Article 2: Optics Fundamentals](docs/article-2-optics-fundamentals.md) — Lens, Prism, Traversal
-- [Article 3: AST and Basic Optics](docs/article-3-ast-basic-optics.md) — Expression language domain
+- [Article 1: The Immutability Gap](docs/article-1-the-immutability-gap.md): Problem and basic solution
+- [Article 2: Optics Fundamentals](docs/article-2-optics-fundamentals.md): Lens, Prism, Traversal
+- [Article 3: AST and Basic Optics](docs/article-3-ast-basic-optics.md): Expression language domain
