@@ -1,8 +1,8 @@
-# Building an Expression Language — Part 2: Tree Traversals and Pattern Rewrites
+# Building an Expression Language: Part 2, Tree Traversals and Pattern Rewrites
 
 *Part 4 of the Functional Optics for Modern Java series*
 
-In Article 3, we built our expression language AST and applied basic optics—lenses for field access and prisms for variant matching. We even created a simple optimiser. But there's a fundamental limitation we need to address: how do we visit *all* nodes in a tree, not just the top level?
+In Article 3, we built our expression language AST and applied basic optics (lenses for field access and prisms for variant matching). We even created a simple optimiser. But there's a fundamental limitation we need to address: how do we visit *all* nodes in a tree, not just the top level?
 
 This is where traversals become essential. A traversal focuses on zero or more elements within a structure, making it perfect for recursive tree operations.
 
@@ -20,7 +20,7 @@ new Binary(
 )
 ```
 
-This tree has six nodes: three `Binary` expressions, two `Variable` nodes, and two `Literal` nodes (counting the nested structure). If we want to find all variables, we can't just look at the top level—we need to descend into every branch.
+This tree has six nodes: three `Binary` expressions, two `Variable` nodes, and two `Literal` nodes (counting the nested structure). If we want to find all variables, we can't just look at the top level; we need to descend into every branch.
 
 The traditional approach uses the Visitor pattern:
 
@@ -63,7 +63,7 @@ Optics offer a better way: define the traversal once, then use it for any operat
 
 ## Building a Universal Expression Traversal
 
-A `Traversal<S, A>` focuses on zero or more `A` values within an `S` structure. For expressions, we want `Traversal<Expr, Expr>`—a traversal that visits all sub-expressions within an expression.
+A `Traversal<S, A>` focuses on zero or more `A` values within an `S` structure. For expressions, we want `Traversal<Expr, Expr>`: a traversal that visits all sub-expressions within an expression.
 
 First, let's define what "all sub-expressions" means for each variant:
 
@@ -81,7 +81,7 @@ public final class ExprTraversal {
 
     /**
      * A traversal targeting all immediate children of an expression.
-     * Does not descend recursively—use with transform utilities for full tree traversal.
+     * Does not descend recursively; use with transform utilities for full tree traversal.
      */
     public static Traversal<Expr, Expr> children() {
         return new Traversal<>() {
@@ -159,7 +159,7 @@ public static Expr transformTopDown(Expr expr, Function<Expr, Expr> f) {
 
 The choice between bottom-up and top-down matters:
 
-- **Bottom-up**: Children are transformed first. Use this when transformations depend on the structure of children (like constant folding—we need to fold `1 + 2` before we can simplify `(1 + 2) * 3`).
+- **Bottom-up**: Children are transformed first. Use this when transformations depend on the structure of children (like constant folding, where we need to fold `1 + 2` before we can simplify `(1 + 2) * 3`).
 
 - **Top-down**: The node is transformed first. Use this when you want to pattern-match on the original structure before children change (like macro expansion).
 
@@ -167,7 +167,7 @@ The choice between bottom-up and top-down matters:
 
 ## Collecting Information
 
-Traversals aren't just for modification—they're equally powerful for extraction. We use *folds* to aggregate information from all focused elements.
+Traversals aren't just for modification; they're equally powerful for extraction. We use *folds* to aggregate information from all focused elements.
 
 ### Finding All Variables
 
@@ -471,7 +471,7 @@ public static Located<Expr> transformPreservingLocation(
 }
 ```
 
-For more sophisticated location handling—like updating locations when inlining code—indexed optics become valuable. We'll explore those in Article 5.
+For more sophisticated location handling (like updating locations when inlining code), indexed optics become valuable. We'll explore those in Article 5.
 
 ---
 
@@ -544,6 +544,35 @@ All through composable, declarative transformations.
 
 ---
 
+## Summary
+
+This article introduced traversals for recursive AST manipulation:
+
+1. **Universal Traversals**: Visit all children of any expression variant
+2. **Deep Traversal**: Bottom-up and top-down recursive descent
+3. **Information Collection**: Extract data with folds and monoids
+4. **Filtered Traversals**: Target specific node types with prisms
+5. **Optimisation Passes**: Constant folding, identity simplification, dead branch elimination
+6. **Composable Optimiser**: Multiple passes running to fixed point
+
+The key insight: traversals separate *what* to visit from *what* to do. Define the traversal once; use it for any operation. This is the optics philosophy: composable, reusable abstractions for structural manipulation.
+
+### The Higher-Kinded-J Advantage for Tree Operations
+
+What makes Higher-Kinded-J particularly powerful for AST manipulation is how it elevates tree traversal from ad-hoc recursion to principled, composable abstractions. Consider what we achieved in this article:
+
+1. **Effect-polymorphic traversals**: The `children()` traversal's `modifyF` signature works with any `Applicative`. This means the same traversal definition handles pure transformations, error accumulation, and stateful operations without modification. Higher-Kinded-J's witness types make this polymorphism type-safe.
+
+2. **Compositional by design**: We composed prisms (for variant matching) with traversals (for tree descent) seamlessly. `ExprPrisms.binary()` focuses on Binary nodes; compose it with our traversal and you can target all Binary nodes in the entire tree. This compositional power comes directly from Higher-Kinded-J's optics implementation.
+
+3. **Separation of concerns**: The traversal infrastructure (how to walk the tree) is completely separate from the operations (what to do at each node). This separation means adding a new AST variant requires updating only the traversal, not every operation that uses it.
+
+4. **Reusable building blocks**: Our `transformBottomUp`, `transformTopDown`, and `foldMap` utilities work for any expression tree operation. These aren't special-cased functions; they're generic combinators built on Higher-Kinded-J's traversal foundations.
+
+The elegance here is that Higher-Kinded-J lets us write code that describes *what* we want to do (visit all nodes, collect variables, fold constants) rather than *how* to do it (manual recursion, visitor boilerplate). The library handles the structural plumbing, letting us focus on the domain logic.
+
+---
+
 ## What's Next
 
 We've built a powerful foundation for tree manipulation. Our traversals can visit every node, our folds can aggregate information, and our optimisation passes compose cleanly.
@@ -560,19 +589,10 @@ In Article 5, we'll explore effect-polymorphic optics with `modifyF`. We'll buil
 - An interpreter using `State` to manage environments
 - A Free monad DSL for composable, interpretable transformations
 
-The same traversals we built here will work unchanged—just with different effects.
+Higher-Kinded-J's true power emerges here. The `modifyF` method we've seen on our traversals accepts any `Applicative` (or `Monad` for operations requiring sequencing). This means the same traversal code we wrote in this article will work unchanged with `Validated` for error accumulation, `State` for environment threading, or `IO` for side effects. Higher-Kinded-J provides the type-class instances and witness types that make this polymorphism possible in Java.
+
+We'll see how Higher-Kinded-J's `Validated` type differs from `Either` (accumulating all errors rather than short-circuiting), how `State` threads environment bindings through interpretation, and how these effects compose with our existing optics. The expression language will gain a full type system and interpreter, all built on the same traversal foundations.
 
 ---
 
-## Summary
-
-This article introduced traversals for recursive AST manipulation:
-
-1. **Universal Traversals** — Visit all children of any expression variant
-2. **Deep Traversal** — Bottom-up and top-down recursive descent
-3. **Information Collection** — Extract data with folds and monoids
-4. **Filtered Traversals** — Target specific node types with prisms
-5. **Optimisation Passes** — Constant folding, identity simplification, dead branch elimination
-6. **Composable Optimiser** — Multiple passes running to fixed point
-
-The key insight: traversals separate *what* to visit from *what* to do. Define the traversal once; use it for any operation. This is the optics philosophy—composable, reusable abstractions for structural manipulation.
+*Next: [Article 5: Effect-Polymorphic Optics](article-5-effect-polymorphic-optics.md)*
