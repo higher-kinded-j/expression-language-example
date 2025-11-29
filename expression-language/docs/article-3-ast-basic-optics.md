@@ -1,12 +1,12 @@
-# Building an Expression Language — Part 1: The AST and Basic Optics
+# Building an Expression Language: Part 1, The AST and Basic Optics
 
 *Part 3 of the Functional Optics for Modern Java series*
 
 In Articles 1 and 2, we established why optics matter and how they work. Now it's time to apply them to a real domain: an expression language interpreter.
 
-Expression languages are the backbone of modern Java infrastructure—from Spring Expression Language (SpEL) to rule engines like Drools. If you've ever configured a complex Spring application or written business rules, you've used one. This article shows how Java 25's data-oriented programming features, combined with higher-kinded-j optics, make building such systems remarkably clean.
+Expression languages are the backbone of modern Java infrastructure, from Spring Expression Language (SpEL) to rule engines like Drools. If you've ever configured a complex Spring application or written business rules, you've used one. This article shows how Java 25's data-oriented programming features, combined with higher-kinded-j optics, make building such systems remarkably clean.
 
-This is the canonical showcase for optics—the domain where they truly shine.
+This is the canonical showcase for optics: the domain where they truly shine.
 
 Over the next three articles, we'll build a complete expression language with parsing, type checking, optimisation, and interpretation. Along the way, you'll see how optics transform what would otherwise be tedious tree manipulation into elegant, composable operations.
 
@@ -32,17 +32,17 @@ Our design goals are:
 2. **Immutable**: Expressions never change; transformations produce new trees
 3. **Transformable**: Easy to analyse, optimise, and rewrite
 
-This third goal is where optics become essential. An expression tree is a recursive structure where any node might contain arbitrarily nested sub-expressions. Transforming such trees manually—with pattern matching and reconstruction—quickly becomes unwieldy. Optics provide a disciplined approach.
+This third goal is where optics become essential. An expression tree is a recursive structure where any node might contain arbitrarily nested sub-expressions. Transforming such trees manually (with pattern matching and reconstruction) quickly becomes unwieldy. Optics provide a disciplined approach.
 
 ### The Data-Oriented Approach
 
-Java 25 fully embraces *data-oriented programming* (DOP)—a paradigm where:
+Java 25 fully embraces *data-oriented programming* (DOP), a paradigm where:
 
-1. **Data is modelled as immutable values** — Records give us transparent, immutable data carriers
-2. **Data is separate from behaviour** — Functions operate on data, rather than methods hiding inside objects
-3. **Polymorphism uses pattern matching** — Instead of virtual dispatch, we match on the shape of data
+1. **Data is modelled as immutable values**: Records give us transparent, immutable data carriers
+2. **Data is separate from behaviour**: Functions operate on data, rather than methods hiding inside objects
+3. **Polymorphism uses pattern matching**: Instead of virtual dispatch, we match on the shape of data
 
-This differs fundamentally from traditional object-oriented design. In OOP, you might create an `Expr` base class with an abstract `evaluate()` method, forcing each subclass to implement its own behaviour. In DOP, `Expr` is pure data—a sealed hierarchy of records—and `evaluate()` is a standalone function that pattern-matches over all variants.
+This differs fundamentally from traditional object-oriented design. In OOP, you might create an `Expr` base class with an abstract `evaluate()` method, forcing each subclass to implement its own behaviour. In DOP, `Expr` is pure data (a sealed hierarchy of records) and `evaluate()` is a standalone function that pattern-matches over all variants.
 
 The benefit? Adding new operations requires no modification to existing types. Want to add constant folding? Write a function. Pretty-printing? Another function. No Visitor pattern, no interface pollution.
 
@@ -72,17 +72,17 @@ public enum BinaryOp {
 ```
 
 This covers more than you might expect:
-- `Literal(42)` — integer constant
-- `Literal(true)` — boolean constant
-- `Variable("x")` — variable reference
-- `Binary(Variable("a"), ADD, Literal(1))` — `a + 1`
-- `Conditional(Variable("flag"), Literal(1), Literal(0))` — `if flag then 1 else 0`
+- `Literal(42)`: integer constant
+- `Literal(true)`: boolean constant
+- `Variable("x")`: variable reference
+- `Binary(Variable("a"), ADD, Literal(1))`: `a + 1`
+- `Conditional(Variable("flag"), Literal(1), Literal(0))`: `if flag then 1 else 0`
 
 The recursive nature is already apparent: `Binary` contains two `Expr` children, and `Conditional` contains three. Any transformation must handle this recursion.
 
 ### Why Sealed Interfaces?
 
-The `sealed` keyword is Java's answer to *sum types*—a closed set of variants that the compiler understands completely. When we write a switch over `Expr`, Java 25 guarantees exhaustiveness:
+The `sealed` keyword is Java's answer to *sum types*: a closed set of variants that the compiler understands completely. When we write a switch over `Expr`, Java 25 guarantees exhaustiveness:
 
 ```java
 String describe(Expr expr) {
@@ -91,11 +91,11 @@ String describe(Expr expr) {
         case Variable(var n) -> "Variable: " + n;
         case Binary(var l, var op, var r) -> "Binary: " + op;
         case Conditional(_, _, _) -> "Conditional";
-    };  // No default needed—compiler knows this is exhaustive
+    };  // No default needed; compiler knows this is exhaustive
 }
 ```
 
-Notice the unnamed pattern `_` for components we don't need—a Java 22+ feature that reduces noise. If we later add a new variant like `FunctionCall`, the compiler flags every incomplete switch. This compile-time safety is essential for language implementations where missing a case means silent bugs.
+Notice the unnamed pattern `_` for components we don't need, a Java 22+ feature that reduces noise. If we later add a new variant like `FunctionCall`, the compiler flags every incomplete switch. This compile-time safety is essential for language implementations where missing a case means silent bugs.
 
 ### Why Records?
 
@@ -105,7 +105,7 @@ Records give us:
 - Pattern matching with deconstruction
 - A natural fit for optics (each component becomes a lens target)
 
-The combination of sealed interfaces and records creates what functional programmers call an *algebraic data type* (ADT)—a sum of products that's both type-safe and pattern-matchable.
+The combination of sealed interfaces and records creates what functional programmers call an *algebraic data type* (ADT): a sum of products that's both type-safe and pattern-matchable.
 
 ### Sidebar: What About the Visitor Pattern?
 
@@ -162,13 +162,13 @@ The DOP version is:
 - **Clearer**: Logic is in one place, not scattered across visitor methods
 - **Safer**: Exhaustiveness is compiler-checked, not convention-enforced
 
-This is why Java's evolution toward DOP matters—it eliminates accidental complexity.
+This is why Java's evolution toward DOP matters: it eliminates accidental complexity.
 
 ---
 
 ## Generating Optics for the AST
 
-Pattern matching handles reading beautifully. But what about *writing*? When we need to transform nodes deep within an expression tree—while preserving immutability—pattern matching alone forces us into manual reconstruction cascades.
+Pattern matching handles reading beautifully. But what about *writing*? When we need to transform nodes deep within an expression tree, while preserving immutability, pattern matching alone forces us into manual reconstruction cascades.
 
 This is where higher-kinded-j's optics shine. With two annotations, we generate a complete toolkit for navigating and transforming our AST:
 
@@ -243,7 +243,7 @@ We've navigated from `Binary` → `left` (Expr) → as `Literal` → `value`, al
 
 ### Why Optics Instead of Just Pattern Matching?
 
-You might wonder: "Java 25's pattern matching is already elegant—why add another abstraction?"
+You might wonder: "Java 25's pattern matching is already elegant; why add another abstraction?"
 
 Three compelling reasons:
 
@@ -283,7 +283,7 @@ Expr updated = leftLens.set(newLeft, expr);
 Expr transformed = leftLens.modify(this::optimize, expr);
 ```
 
-The `modify` operation is particularly powerful—it extracts, transforms, and rebuilds in one step, handling all the immutable reconstruction automatically.
+The `modify` operation is particularly powerful: it extracts, transforms, and rebuilds in one step, handling all the immutable reconstruction automatically.
 
 **3. Reusable Paths**
 
@@ -298,7 +298,7 @@ Expr opt1 = leftOperand.modify(this::fold, expr1);
 Expr opt2 = leftOperand.modify(this::fold, expr2);
 ```
 
-This becomes invaluable when the same traversal pattern appears across multiple transformations—which happens constantly in real compilers and interpreters.
+This becomes invaluable when the same traversal pattern appears across multiple transformations, which happens constantly in real compilers and interpreters.
 
 ---
 
@@ -323,7 +323,7 @@ public static Expr incrementLiterals(Expr expr) {
 }
 ```
 
-But wait—this only transforms the top-level expression. If the literal is nested inside a `Binary`, it won't be touched. We need recursion.
+But wait: this only transforms the top-level expression. If the literal is nested inside a `Binary`, it won't be touched. We need recursion.
 
 ### The Recursive Challenge
 
@@ -452,7 +452,7 @@ This pattern matching is where Java's native features work well alongside optics
 
 ## Building a Simple Optimiser
 
-Let's put everything together to build a constant folder—an optimiser that evaluates constant expressions at compile time.
+Let's put everything together to build a constant folder: an optimiser that evaluates constant expressions at compile time.
 
 ### Constant Folding
 
@@ -562,30 +562,48 @@ public static Expr optimise(Expr expr) {
 }
 ```
 
-This runs both optimisations repeatedly until the expression stops changing. The immutability of our AST makes equality checking trivial—we can use `equals()` directly.
+This runs both optimisations repeatedly until the expression stops changing. The immutability of our AST makes equality checking trivial; we can use `equals()` directly.
+
+---
+
+## Summary
+
+We've built a solid foundation for expression language development using Java 25's data-oriented programming features:
+
+- **Sealed interfaces** define a closed universe of expression types
+- **Records** provide immutable, transparent data carriers
+- **Pattern matching** enables elegant, exhaustive case analysis
+- **Optics** (via Higher-Kinded-J) add composable, bidirectional transformations
+
+### The Higher-Kinded-J Advantage for DOP
+
+What makes this article's approach particularly elegant is how Higher-Kinded-J complements Java's native DOP features. While Java 25 excels at *reading* data through pattern matching, Higher-Kinded-J fills the gap for *writing*: transforming deeply nested immutable structures without manual reconstruction cascades.
+
+The `@GenerateLenses` and `@GeneratePrisms` annotations we used are more than convenience. They represent a fundamental insight: the structure of your data types *implies* a navigation API. Sealed interfaces naturally give rise to prisms (one for each variant), while records naturally give rise to lenses (one for each component). Higher-Kinded-J makes this correspondence explicit and automatic.
+
+This is particularly powerful for AST manipulation. Consider what we achieved:
+
+1. **Type-safe variant access**: `ExprPrisms.binary()` safely focuses on `Binary` nodes, returning `Optional` rather than risking `ClassCastException`
+2. **Composable paths**: `BinaryLenses.left().andThen(ExprPrisms.literal())` builds a path through the tree that works for both reading and writing
+3. **Declarative transformations**: Instead of writing recursive switch statements for each operation, we compose reusable optic paths
+
+The result is code that reads like a description of *what* you want to access, not *how* to access it. This declarative style meshes naturally with DOP's emphasis on data as values.
 
 ---
 
 ## What's Next
 
-We've built a solid foundation using Java 25's data-oriented programming features:
+There's a limitation in our current approach: the `transformExpr` function is hand-written boilerplate. Every time we add a new expression type, we must update it. This violates the DRY principle and risks bugs when someone forgets.
 
-- **Sealed interfaces** define a closed universe of expression types
-- **Records** provide immutable, transparent data carriers
-- **Pattern matching** enables elegant, exhaustive case analysis
-- **Optics** (via higher-kinded-j) add composable, bidirectional transformations
+In Article 4, we'll introduce *traversals*, optics that focus on multiple values simultaneously. With a traversal over all sub-expressions, we can:
 
-This combination—Java's native DOP support plus higher-kinded-j's optics—gives us the best of both worlds: the clarity of pattern matching for reading, and the composability of optics for writing.
-
-But there's a limitation: our `transformExpr` function is hand-written boilerplate. Every time we add a new expression type, we must update it. This violates the DRY principle and risks bugs when someone forgets.
-
-In Article 4, we'll introduce *traversals*—optics that focus on multiple values simultaneously. With a traversal over all sub-expressions, we can:
-
-- **Eliminate the manual recursion** — One traversal replaces the switch-based boilerplate
+- **Eliminate the manual recursion**: One traversal replaces the switch-based boilerplate
 - **Collect all variables** in an expression with a single composed optic
-- **Implement sophisticated rewrites** — Pattern-based transformations become declarative
+- **Implement sophisticated rewrites**: Pattern-based transformations become declarative
 
-We'll also tackle dead code elimination and common subexpression elimination—transformations that showcase how optics scale to real compiler optimisations.
+Higher-Kinded-J's traversal support will prove essential here. The library provides not just the `Traversal` type, but utilities for folding over focused values, filtering by predicates, and composing traversals with lenses and prisms. This means our expression-walking logic becomes a composable value we can store, pass around, and reuse, rather than ad-hoc code scattered throughout the codebase.
+
+We'll also tackle dead code elimination and common subexpression elimination, transformations that showcase how optics scale to real compiler optimisations.
 
 ---
 
