@@ -15,7 +15,7 @@ java {
 
 
 application {
-    mainClass.set("org.higherkindedj.article4.demo.Article4Demo")
+    mainClass.set("org.higherkindedj.article5.demo.Article5Demo")
 }
 
 repositories {
