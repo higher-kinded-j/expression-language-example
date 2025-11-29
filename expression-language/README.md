@@ -1,19 +1,19 @@
-# Article 4: Tree Traversals and Pattern Rewrites
+# Article 5: Effect-Polymorphic Optics
 
-**Branch**: `article-4-traversals-rewrites`
+**Branch**: `article-5-effect-polymorphic`
 
-This branch contains the companion code for Article 4 of the "Functional Optics for Modern Java" series. It builds on Article 3 by introducing traversals for recursive AST manipulation.
+This branch contains the companion code for Article 5 of the "Functional Optics for Modern Java" series. It builds on Article 4 by introducing effect-polymorphic operations: the same optics working with different computational contexts.
 
 ## What's New in This Branch
 
-Building on the foundation from Articles 1-3, this branch adds:
+Building on the foundation from Articles 1-4, this branch adds:
 
-- **Traversal type**: Focus on zero or more elements within a structure
-- **Expression traversals**: Visit all children or all descendants of an expression
-- **Bottom-up and top-down transforms**: Recursive tree transformations with controlled ordering
-- **Fold utilities**: Collect information from the entire tree (variables, operators, counts)
-- **Enhanced optimiser**: Multiple passes using traversal-based transformations
-- **Common subexpression detection**: Find repeated patterns for potential optimisation
+- **Effect polymorphism**: Abstract over computational context with `Kind<F, A>`
+- **Validated type**: Accumulate all errors instead of failing on the first
+- **State monad**: Thread context through computations implicitly
+- **Type checker**: Expression type checking with error accumulation
+- **Interpreter**: Expression evaluation with environment threading
+- **modifyF operations**: Bridge between optics and effects
 
 ## Running the Demos
 
@@ -21,118 +21,114 @@ Building on the foundation from Articles 1-3, this branch adds:
 gradle run
 ```
 
-This runs all Article 4 demonstrations:
+This runs all Article 5 demonstrations:
 
-1. **TraversalDemo**: Children traversal, bottom-up/top-down transforms, information collection
-2. **OptimiserDemo**: Constant folding, identity simplification, cascading optimisation
+1. **TypeCheckerDemo**: Type checking with error accumulation
+2. **InterpreterDemo**: Expression evaluation with State monad
+3. **EffectPolymorphicDemo**: Same traversal, different effects
 
 ## Key Concepts Introduced
 
-### Traversals
+### Effect Polymorphism
 
-A `Traversal<S, A>` focuses on zero or more `A` values within an `S` structure:
+Write code once that works with many different effects:
 
 ```java
-public interface Traversal<S, A> {
-    S modify(Function<A, A> f, S source);
-    List<A> getAll(S source);
-    S set(A value, S source);
-    <B> Traversal<S, B> andThen(Traversal<A, B> inner);
-    Traversal<S, A> filtered(Predicate<A> predicate);
+// The same traversal signature works with any effect F
+<F> Kind<F, S> modifyF(
+    Function<A, Kind<F, A>> f,
+    S source,
+    Applicative<F> applicative
+);
+```
+
+### The Validated Type
+
+Accumulate errors instead of short-circuiting:
+
+```java
+public sealed interface Validated<E, A> {
+    record Valid<E, A>(A value) implements Validated<E, A> {}
+    record Invalid<E, A>(E errors) implements Validated<E, A> {}
+}
+
+// Combine validations, collecting all errors
+Validated<TypeErrors, Type> result = ValidatedKind.APPLICATIVE.map2(
+    leftValidation,
+    rightValidation,
+    (left, right) -> combineTypes(left, right)
+);
+```
+
+### The State Monad
+
+Thread state through computations implicitly:
+
+```java
+public record State<S, A>(Function<S, Pair<A, S>> runState) {
+    public static <S, A> State<S, A> of(A value);
+    public static <S> State<S, S> get();
+    public static <S> State<S, Void> put(S newState);
+    public <B> State<S, B> flatMap(Function<A, State<S, B>> f);
+}
+
+// Interpret with environment threading
+State<Environment, Object> interpret(Expr expr) {
+    return switch (expr) {
+        case Variable(var name) ->
+            State.<Environment>get().map(env -> env.lookup(name));
+        // ...
+    };
 }
 ```
 
-### Expression Traversals
+### Effect Types and Their Behaviours
 
-```java
-// Visit immediate children only
-Traversal<Expr, Expr> children = ExprTraversal.children();
+| Effect Type | `Kind<F, A>` represents | Behaviour |
+|-------------|------------------------|-----------|
+| `Identity` | Just `A` | Pure computation |
+| `Optional` | `A` or nothing | Might fail |
+| `Either<E, ?>` | `A` or error `E` | Fail-fast errors |
+| `Validated<E, ?>` | `A` or accumulated errors | Error accumulation |
+| `State<S, ?>` | `A` with state `S` | Stateful computation |
 
-// Focus on the expression itself (for composition)
-Traversal<Expr, Expr> self = ExprTraversal.self();
+### Applicative vs Monad
 
-// Transform from leaves to root (pure)
-Expr result = ExprTraversal.transformBottomUp(expr, transform);
+| Abstraction | Key Operation | Use Case |
+|-------------|---------------|----------|
+| Applicative | `map2(fa, fb, combine)` | Independent computations |
+| Monad | `flatMap(fa, f)` | Dependent computations |
 
-// Transform from root to leaves (pure)
-Expr result = ExprTraversal.transformTopDown(expr, transform);
-```
-
-### Composition Table
-
-| First | Second | Result |
-|-------|--------|--------|
-| Lens | Lens | Lens |
-| Lens | Prism | Traversal |
-| Lens | Traversal | Traversal |
-| Prism | Lens | Traversal |
-| Prism | Prism | Prism |
-| Traversal | * | Traversal |
-
-### Fold Utilities
-
-```java
-// Find all variables
-Set<String> vars = ExprFold.findVariables(expr);
-
-// Count nodes by type
-NodeCounts counts = ExprFold.countNodes(expr);
-
-// Find operators used
-Set<BinaryOp> ops = ExprFold.findOperators(expr);
-
-// Find common subexpressions
-Map<Expr, Integer> common = ExprFold.findCommonSubexpressions(expr);
-
-// Check if expression is constant
-boolean isConst = ExprFold.isConstant(expr);
-```
-
-### Optimisation Passes
-
-The optimiser runs multiple passes to fixed point:
-
-1. **Constant folding**: `1 + 2` → `3`
-2. **Identity simplification**: `x + 0` → `x`, `x * 1` → `x`
-3. **Dead branch elimination**: `if true then a else b` → `a`
-
-```java
-Expr optimised = ExprOptimiser.optimise(expr);
-```
-
-### Bottom-Up vs Top-Down
-
-| Order | Description | Use Case |
-|-------|-------------|----------|
-| Bottom-up | Children first, then parent | Constant folding, evaluation |
-| Top-down | Parent first, then children | Macro expansion, early rewriting |
+`Validated` is Applicative but not Monad: this enables error accumulation.
 
 ## Code Structure
 
 ```
 src/main/java/org/higherkindedj/
-├── article1/                    # From Article 1
-├── article2/                    # From Article 2
-├── article3/                    # From Article 3
+├── article1-4/                  # From previous articles
 │
-└── article4/                    # NEW: Article 4 code
-    ├── ast/                     # Expression Language AST
-    │   ├── Expr.java            # Sealed interface + records
-    │   └── BinaryOp.java        # Binary operators enum
+└── article5/                    # NEW: Article 5 code
+    ├── effect/                  # Effect type definitions
+    │   ├── Validated.java       # Error-accumulating validation
+    │   ├── ValidatedKind.java   # Higher-kinded encoding
+    │   ├── State.java           # State monad
+    │   └── StateKind.java       # Higher-kinded encoding
     │
-    ├── traversal/               # Traversal infrastructure
-    │   ├── Traversal.java       # Generic traversal interface
-    │   ├── ExprTraversal.java   # Expression-specific traversals
-    │   ├── ExprFold.java        # Fold utilities for collection
-    │   └── NodeCounts.java      # Node counting result type
+    ├── typecheck/               # Type checking infrastructure
+    │   ├── Type.java            # Expression types
+    │   ├── TypeError.java       # Type error representation
+    │   ├── TypeEnv.java         # Type environment
+    │   └── ExprTypeChecker.java # The type checker
     │
-    ├── transform/               # Transformation utilities
-    │   └── ExprOptimiser.java   # Multi-pass optimiser
+    ├── interpret/               # Interpretation infrastructure
+    │   ├── Environment.java     # Variable bindings
+    │   └── ExprInterpreter.java # The interpreter
     │
     └── demo/                    # Runnable demonstrations
-        ├── Article4Demo.java    # Main entry point
-        ├── TraversalDemo.java   # Traversal examples
-        └── OptimiserDemo.java   # Optimisation examples
+        ├── Article5Demo.java    # Main entry point
+        ├── TypeCheckerDemo.java # Type checking examples
+        ├── InterpreterDemo.java # Interpretation examples
+        └── EffectPolymorphicDemo.java  # Effect polymorphism examples
 ```
 
 ## Building
@@ -148,11 +144,8 @@ This project uses **JDK 25** with the higher-kinded-j library (version 0.2.2-SNA
 Java 25 features used:
 - **Switch expressions with record patterns**: Nested deconstruction
 - **Pattern guards (`when` clauses)**: Conditional pattern matching
-- **Multi-pattern cases**: `case A, B -> ...`
-- **Unnamed patterns (`_`)**: Ignore unneeded components
-- **Sealed interfaces**: Exhaustiveness checking
-
-The optics implementations simulate what Higher-Kinded-J auto-generates with `@GenerateLenses` and `@GeneratePrisms`.
+- **Sealed interfaces**: Exhaustiveness checking for sum types
+- **Records**: Immutable data carriers
 
 ## Spotless Configuration
 
@@ -163,16 +156,17 @@ The project uses Spotless for code formatting matching Higher-Kinded-J's style:
 
 ## What's Next
 
-Article 5 will introduce effect-polymorphic operations:
-- Type checking with `Validated` (accumulating errors)
-- Interpretation with `State` (environment management)
-- The Free monad DSL for composable transformations
-- The same traversals working with different computational effects
+Article 6 will complete the expression language with parsing:
+- Parser combinators using Higher-Kinded-J's applicative style
+- Error recovery for malformed input
+- Source location tracking through the pipeline
+- End-to-end demonstration from source text to result
 
-Higher-Kinded-J's optics generation will be central to this work, enabling us to navigate and transform the AST with minimal boilerplate. The `@GeneratePrisms` annotation on our sealed `Expr` interface will generate type-safe accessors for each variant, whilst `@GenerateLenses` on the records will provide field access. Together, they compose into powerful traversals that can reach any part of the expression tree.
+Higher-Kinded-J's `Alternative` type class will enable choice and repetition in parsers, whilst the same applicative patterns we used for type checking will structure the parser combinators themselves.
 
 ## Previous Articles
 
 - [Article 1: The Immutability Gap](docs/article-1-the-immutability-gap.md): Problem and basic solution
 - [Article 2: Optics Fundamentals](docs/article-2-optics-fundamentals.md): Lens, Prism, Traversal
 - [Article 3: AST and Basic Optics](docs/article-3-ast-basic-optics.md): Expression language domain
+- [Article 4: Tree Traversals](docs/article-4-traversals-rewrites.md): Recursive AST manipulation
