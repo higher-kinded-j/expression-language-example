@@ -4,7 +4,7 @@
 
 Modern Java has embraced immutability. Records give us concise, immutable data carriers. Pattern matching lets us elegantly destructure nested structures. Sealed interfaces enable exhaustive type hierarchies. Yet despite these advances, one fundamental operation remains surprisingly painful: updating a value deep within an immutable structure.
 
-This article introduces *optics*—a family of composable abstractions that complete the immutability story. If pattern matching is how we *read* nested data, optics are how we *write* it.
+This article introduces *optics*, a family of composable abstractions that complete the immutability story. If pattern matching is how we *read* nested data, optics are how we *write* it.
 
 ---
 
@@ -65,7 +65,7 @@ Four straightforward records. Nothing complex. Now suppose we need to update the
 company.getDepartment("Engineering").getManager().getAddress().setStreet("100 New Street");
 ```
 
-One line. Done. But our records are immutable—there are no setters. Instead, we must reconstruct every record in the path from root to leaf:
+One line. Done. But our records are immutable: there are no setters. Instead, we must reconstruct every record in the path from root to leaf:
 
 ```java
 public static Company updateManagerStreet(Company company, String deptName, String newStreet) {
@@ -111,7 +111,7 @@ public static Company updateManagerStreet(Company company, String deptName, Stri
 }
 ```
 
-Twenty-five lines of code to change a single string. Every record in the path must be manually reconstructed, copying all unchanged fields. This is the *copy constructor cascade*—an anti-pattern that plagues immutable codebases.
+Twenty-five lines of code to change a single string. Every record in the path must be manually reconstructed, copying all unchanged fields. This is the *copy constructor cascade*, an anti-pattern that plagues immutable codebases.
 
 You might think: "Just add `withX()` methods to each record." Indeed, you could:
 
@@ -132,7 +132,7 @@ var newDept = dept.withManager(newManager);
 // ... and so on
 ```
 
-The ceremony remains. The boilerplate persists. And the potential for error—accidentally copying the wrong field, forgetting to update an intermediate layer—grows with each level of nesting.
+The ceremony remains. The boilerplate persists. And the potential for error (accidentally copying the wrong field, forgetting to update an intermediate layer) grows with each level of nesting.
 
 ---
 
@@ -153,12 +153,12 @@ Pattern matching lets us drill down through layers, ignoring fields we don't car
 But to write a new street? We're back to the imperative copy-constructor cascade. There's no "pattern setting" in Java. We cannot write:
 
 ```java
-employee with { address.street = "100 New Street" }  // Nested updates—not supported
+employee with { address.street = "100 New Street" }  // Nested updates: not supported
 ```
 
 ### A Note on JEP 468: Derived Record Creation
 
-Java is making progress here. [JEP 468](https://openjdk.org/jeps/468) introduces derived record creation—a `with` expression for records. Currently a Candidate JEP (preview in JDK 23), it allows:
+Java is making progress here. [JEP 468](https://openjdk.org/jeps/468) introduces derived record creation, a `with` expression for records. Currently a Candidate JEP (preview in JDK 23), it allows:
 
 ```java
 Address updated = oldAddress with { street = "100 New Street"; };
@@ -180,19 +180,19 @@ Employee updated = employee with {
 };
 ```
 
-Better than the full copy-constructor cascade, certainly. But you still manually thread updates through each layer. The ceremony shrinks but doesn't disappear. And as nesting deepens—a company containing departments containing employees containing addresses—even chained `with` expressions become unwieldy.
+Better than the full copy-constructor cascade, certainly. But you still manually thread updates through each layer. The ceremony shrinks but doesn't disappear. As nesting deepens (a company containing departments containing employees containing addresses), even chained `with` expressions become unwieldy.
 
 JEP 468 is a welcome addition, but it addresses syntax, not composability. Optics provide something fundamentally different: reusable, composable access paths that can be defined once and applied anywhere.
 
 ### The Wider Landscape
 
-Other languages have recognised this gap. Haskell has lenses. Scala has Monocle. F# has property access expressions. C# has `with` expressions for records (similar to JEP 468). What distinguishes optics is *composition*—the ability to combine small, focused accessors into larger ones that handle arbitrary depth automatically.
+Other languages have recognised this gap. Haskell has lenses. Scala has Monocle. F# has property access expressions. C# has `with` expressions for records (similar to JEP 468). What distinguishes optics is *composition*: the ability to combine small, focused accessors into larger ones that handle arbitrary depth automatically.
 
-This asymmetry isn't just inconvenient—it actively discourages immutability. Developers facing the copy-constructor cascade often reach for mutability instead. "Just make the fields non-final," they say. "It's simpler." And in the short term, it is. But mutability brings its own problems: thread safety issues, defensive copying, spooky action at a distance when an object you thought you owned gets modified by code you didn't control.
+This asymmetry isn't just inconvenient; it actively discourages immutability. Developers facing the copy-constructor cascade often reach for mutability instead. "Just make the fields non-final," they say. "It's simpler." And in the short term, it is. But mutability brings its own problems: thread safety issues, defensive copying, spooky action at a distance when an object you thought you owned gets modified by code you didn't control.
 
-The promise of modern Java—clean, immutable, data-oriented code—remains half-fulfilled. Pattern matching gave us elegant reading. Now we need elegant writing.
+The promise of modern Java (clean, immutable, data-oriented code) remains half-fulfilled. Pattern matching gave us elegant reading. Now we need elegant writing.
 
-[Higher-Kinded-J](https://github.com/higher-kinded-j/higher-kinded-j) is a new library that brings the full power of optics to Java. Throughout this series, we'll use it to demonstrate how these patterns work in practice—with annotation-driven generation that eliminates boilerplate while preserving type safety.
+[Higher-Kinded-J](https://github.com/higher-kinded-j/higher-kinded-j) is a new library that brings the full power of optics to Java. Throughout this series, we'll use it to demonstrate how these patterns work in practice, with annotation-driven generation that eliminates boilerplate while preserving type safety.
 
 **Pattern matching is half the puzzle; optics complete it.**
 
@@ -206,7 +206,7 @@ The key insight is that access paths compose. If you have a way to focus on an e
 
 Consider an analogy: XPath for objects. In XPath, you might write `/company/departments/manager/address/street` to navigate to a specific element. Optics provide similar navigation, but:
 
-- They're type-safe—the compiler ensures your path is valid
+- They're type-safe: the compiler ensures your path is valid
 - They support both reading *and* writing
 - They compose with standard function composition
 
@@ -242,7 +242,7 @@ public <B> Lens<S, B> andThen(Lens<A, B> other) {
 }
 ```
 
-Given a lens from `Employee` to `Address` and a lens from `Address` to `String` (the street), `andThen` produces a lens from `Employee` to `String`. The composed lens automatically handles the intermediate reconstruction—no manual copy-constructor cascade required.
+Given a lens from `Employee` to `Address` and a lens from `Address` to `String` (the street), `andThen` produces a lens from `Employee` to `String`. The composed lens automatically handles the intermediate reconstruction, eliminating the manual copy-constructor cascade.
 
 Optics have a rich history. They emerged from the Haskell community in the early 2010s, with Edward Kmett's `lens` library becoming the definitive implementation. The ideas spread to Scala (Monocle), PureScript, and other functional languages. The theoretical foundations connect to category theory, though you needn't understand the theory to use optics effectively.
 
@@ -275,7 +275,7 @@ record Rectangle(double width, double height) implements Shape {}
 ```
 
 A prism for `Circle` can:
-- **Get** the `Circle` from a `Shape`—if it is one (returning `Optional`)
+- **Get** the `Circle` from a `Shape`, if it is one (returning `Optional`)
 - **Build** a `Shape` from a `Circle` (always succeeds)
 
 Prisms handle the uncertainty of sum types. Not every `Shape` is a `Circle`, so `get` might fail. But every `Circle` is a `Shape`, so `build` always works.
@@ -315,7 +315,7 @@ Optics compose, but the result type depends on what you're composing:
 
 The intuition: composing with something "weaker" yields a Traversal. A lens through a prism might not find anything (the prism might not match). A lens through a traversal might find many things.
 
-Some optics libraries introduce additional types like "affine" or "optional" for the zero-or-one case. Higher-Kinded-J takes a simpler approach: `Traversal` handles all these cases uniformly—whether the focus is zero, one, or many elements.
+Some optics libraries introduce additional types like "affine" or "optional" for the zero-or-one case. Higher-Kinded-J takes a simpler approach: `Traversal` handles all these cases uniformly, whether the focus is zero, one, or many elements.
 
 ### When to Use Each
 
@@ -457,7 +457,7 @@ One composed lens replaces what would otherwise be multiple levels of manual rec
 
 ## What's Coming
 
-This article introduced the problem—the immutability gap—and sketched the solution—optics. We've seen:
+This article introduced the problem (the immutability gap) and sketched the solution (optics). We've seen:
 
 - Why nested immutable updates are painful in Java
 - How pattern matching solves reading but not writing
@@ -466,9 +466,9 @@ This article introduced the problem—the immutability gap—and sketched the so
 
 ### Introducing higher-kinded-j
 
-Throughout this series, we'll use [higher-kinded-j](https://github.com/higher-kinded-j/higher-kinded-j)—a library that brings functional programming abstractions to modern Java. It provides:
+Throughout this series, we'll use [Higher-Kinded-J](https://github.com/higher-kinded-j/higher-kinded-j), a library that brings functional programming abstractions to modern Java. It provides:
 
-- **Production-ready optics**: Lens, Prism, Traversal, and more—with proper composition and laws
+- **Production-ready optics**: Lens, Prism, Traversal, and more, with proper composition and laws
 - **Annotation-driven generation**: The `@GenerateLenses` annotation eliminates boilerplate by generating lens accessors for your records automatically
 - **Higher-kinded types**: The foundation that makes optics (and other abstractions like functors and monads) possible in Java's type system
 - **Zero runtime overhead**: All the abstraction happens at compile time
@@ -485,10 +485,10 @@ In Article 2, we'll dive deeper into optics fundamentals:
 - Traversals for collections and bulk operations
 - Setting up higher-kinded-j for annotation-driven lens generation
 
-From Article 3 onwards, we'll build an expression language interpreter—the canonical optics showcase—demonstrating how these abstractions shine for AST manipulation, tree transformations, and effectful operations.
+From Article 3 onwards, we'll build an expression language interpreter, the canonical optics showcase, demonstrating how these abstractions shine for AST manipulation, tree transformations, and effectful operations.
 
 By the end of this series, you'll never want to update nested data manually again.
 
 ---
 
-*Next: [Article 2: Optics Fundamentals—Lenses, Prisms, and Traversals in Practice](article-2-optics-fundamentals.md)*
+*Next: [Article 2: Optics Fundamentals](article-2-optics-fundamentals.md)*
