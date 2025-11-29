@@ -8,9 +8,9 @@ This branch contains the companion code for Article 3 of the "Functional Optics 
 
 This branch showcases Java 25's data-oriented programming (DOP) approach:
 
-1. **Data as immutable values** — Records provide transparent, immutable data carriers
-2. **Behaviour separate from data** — Operations are standalone functions, not embedded methods
-3. **Pattern matching for polymorphism** — Switch expressions with guards replace virtual dispatch
+1. **Data as immutable values**: Records provide transparent, immutable data carriers
+2. **Behaviour separate from data**: Operations are standalone functions, not embedded methods
+3. **Pattern matching for polymorphism**: Switch expressions with guards replace virtual dispatch
 
 Instead of the traditional Visitor pattern, we use sealed interfaces + records + pattern matching for cleaner, more maintainable AST code.
 
@@ -18,21 +18,21 @@ Instead of the traditional Visitor pattern, we use sealed interfaces + records +
 
 Building on the foundation from Articles 1 and 2, this branch adds:
 
-- **Expression Language AST** — A complete sealed interface hierarchy using DOP principles
-- **Auto-generated-style optics** — Lenses and prisms for the AST (simulating higher-kinded-j generation)
-- **Expression transformations** — Bottom-up and top-down tree traversal utilities
-- **Expression optimiser** — Constant folding and identity simplification using Java 25 patterns
-- **Optic composition** — Prism-to-lens composition for deep AST access
+- **Expression Language AST**: A complete sealed interface hierarchy using DOP principles
+- **Auto-generated-style optics**: Lenses and prisms for the AST (simulating higher-kinded-j generation)
+- **Expression transformations**: Bottom-up and top-down tree traversal utilities
+- **Expression optimiser**: Constant folding and identity simplification using Java 25 patterns
+- **Optic composition**: Prism-to-lens composition for deep AST access
 
 ## Java 25 Features Demonstrated
 
 This code showcases modern Java 25 capabilities:
 
-- **Switch expressions with record patterns** — Deconstruct nested records in one expression
-- **Pattern guards with `when` clauses** — Add conditions to pattern matches
-- **Multi-pattern cases** — Combine related patterns: `case Literal(_), Variable(_) -> ...`
-- **Unnamed patterns (`_`)** — Ignore components you don't need
-- **Sealed interfaces** — Exhaustiveness checking for sum types
+- **Switch expressions with record patterns**: Deconstruct nested records in one expression
+- **Pattern guards with `when` clauses**: Add conditions to pattern matches
+- **Multi-pattern cases**: Combine related patterns: `case Literal(_), Variable(_) -> ...`
+- **Unnamed patterns (`_`)**: Ignore components you don't need
+- **Sealed interfaces**: Exhaustiveness checking for sum types
 
 ## Running the Demos
 
@@ -42,8 +42,8 @@ gradle run
 
 This runs all Article 3 demonstrations:
 
-1. **ExprDemo** — Building expressions, using prisms and lenses, pattern matching
-2. **OptimiserDemo** — Constant folding, identity simplification, conditional elimination
+1. **ExprDemo**: Building expressions, using prisms and lenses, pattern matching
+2. **OptimiserDemo**: Constant folding, identity simplification, conditional elimination
 
 ## Key Concepts Introduced
 
@@ -90,16 +90,27 @@ The DOP version is shorter, clearer, and has compiler-checked exhaustiveness.
 ### Optics for the AST
 
 **Prisms** for each Expr variant:
-- `ExprPrisms.literal()` — Focus on Literal expressions
-- `ExprPrisms.variable()` — Focus on Variable expressions
-- `ExprPrisms.binary()` — Focus on Binary expressions
-- `ExprPrisms.conditional()` — Focus on Conditional expressions
+- `ExprPrisms.literal()`: Focus on Literal expressions
+- `ExprPrisms.variable()`: Focus on Variable expressions
+- `ExprPrisms.binary()`: Focus on Binary expressions
+- `ExprPrisms.conditional()`: Focus on Conditional expressions
 
 **Lenses** for each record field:
-- `LiteralLenses.value()` — Access the value in a Literal
-- `VariableLenses.name()` — Access the name in a Variable
-- `BinaryLenses.left()`, `op()`, `right()` — Access Binary components
-- `ConditionalLenses.cond()`, `then_()`, `else_()` — Access Conditional components
+- `LiteralLenses.value()`: Access the value in a Literal
+- `VariableLenses.name()`: Access the name in a Variable
+- `BinaryLenses.left()`, `op()`, `right()`: Access Binary components
+- `ConditionalLenses.cond()`, `then_()`, `else_()`: Access Conditional components
+
+### Composition Table
+
+| First | Second | Result |
+|-------|--------|--------|
+| Lens | Lens | Lens |
+| Lens | Prism | Traversal |
+| Lens | Traversal | Traversal |
+| Prism | Lens | Traversal |
+| Prism | Prism | Prism |
+| Traversal | * | Traversal |
 
 ### Expression Optimiser with Java 25 Pattern Guards
 
@@ -117,17 +128,17 @@ return switch (expr) {
 
 Three optimisation passes:
 
-1. **Constant folding** — Evaluate constant expressions at compile time
+1. **Constant folding**: Evaluate constant expressions at compile time
    - `1 + 2` → `3`
    - `true && false` → `false`
 
-2. **Identity simplification** — Remove redundant operations
+2. **Identity simplification**: Remove redundant operations
    - `x + 0` → `x`
    - `x * 1` → `x`
    - `x * 0` → `0`
    - `x && true` → `x`
 
-3. **Conditional simplification** — Eliminate branches with constant conditions
+3. **Conditional simplification**: Eliminate branches with constant conditions
    - `if true then a else b` → `a`
    - `if false then a else b` → `b`
 
@@ -179,11 +190,11 @@ gradle compileJava
 This project uses **JDK 25** with the higher-kinded-j library (version 0.2.2-SNAPSHOT).
 
 Java 25 features used:
-- **Switch expressions with record patterns** — Nested deconstruction
-- **Pattern guards (`when` clauses)** — Conditional pattern matching
-- **Multi-pattern cases** — `case A, B -> ...`
-- **Unnamed patterns (`_`)** — Ignore unneeded components
-- **Sealed interfaces** — Exhaustiveness checking
+- **Switch expressions with record patterns**: Nested deconstruction
+- **Pattern guards (`when` clauses)**: Conditional pattern matching
+- **Multi-pattern cases**: `case A, B -> ...`
+- **Unnamed patterns (`_`)**: Ignore unneeded components
+- **Sealed interfaces**: Exhaustiveness checking
 
 The optics implementations simulate what Higher-Kinded-J auto-generates with `@GenerateLenses` and `@GeneratePrisms`.
 
@@ -202,7 +213,9 @@ Article 4 will introduce traversals for recursive structures:
 - Building queries with traversal composition
 - More sophisticated transformations
 
+Higher-Kinded-J's optics generation will be central to this work, enabling us to navigate and transform the AST with minimal boilerplate. The `@GeneratePrisms` annotation on our sealed `Expr` interface will generate type-safe accessors for each variant, whilst `@GenerateLenses` on the records will provide field access. Together, they compose into powerful traversals that can reach any part of the expression tree.
+
 ## Previous Articles
 
-- [Article 1: The Immutability Gap](docs/article-1-the-immutability-gap.md) — Problem and basic solution
-- [Article 2: Optics Fundamentals](docs/article-2-optics-fundamentals.md) — Lens, Prism, Traversal
+- [Article 1: The Immutability Gap](docs/article-1-the-immutability-gap.md): Problem and basic solution
+- [Article 2: Optics Fundamentals](docs/article-2-optics-fundamentals.md): Lens, Prism, Traversal

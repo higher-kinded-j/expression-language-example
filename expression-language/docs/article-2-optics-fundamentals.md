@@ -2,7 +2,7 @@
 
 *Part 2 of the Functional Optics for Modern Java series*
 
-In Article 1, we identified the immutability gap: modern Java excels at reading nested data through pattern matching, but provides no elegant solution for writing. We introduced optics as the missing piece—composable abstractions that treat access paths as first-class values.
+In Article 1, we identified the immutability gap: modern Java excels at reading nested data through pattern matching, but provides no elegant solution for writing. We introduced optics as the missing piece: composable abstractions that treat access paths as first-class values.
 
 Now it's time to get practical. This article dives deep into the three core optic types: lenses for product types, prisms for sum types, and traversals for collections. By the end, you'll understand not just how to use each, but when and why.
 
@@ -99,7 +99,7 @@ With the dependencies in place, we're ready to explore each optic type in depth.
 
 ## Lenses: The Foundation
 
-A lens focuses on exactly one value within a larger structure. It represents a "has-a" relationship: an `Employee` *has an* `Address`; an `Address` *has a* `street`. Lenses always succeed—the focused value is guaranteed to exist.
+A lens focuses on exactly one value within a larger structure. It represents a "has-a" relationship: an `Employee` *has an* `Address`; an `Address` *has a* `street`. Lenses always succeed; the focused value is guaranteed to exist.
 
 ### Generating Lenses
 
@@ -153,7 +153,7 @@ Address updated = streetLens.set("100 New Street", address);
 Address uppercased = streetLens.modify(String::toUpperCase, address);
 ```
 
-The `modify` operation is particularly powerful—it combines get and set in a single traversal, ensuring the transformation is applied consistently.
+The `modify` operation is particularly powerful: it combines get and set in a single traversal, ensuring the transformation is applied consistently.
 
 ### Lens Composition
 
@@ -191,7 +191,7 @@ Well-behaved lenses satisfy three laws that ensure predictable behaviour:
    lens.set(a2, lens.set(a1, s)) == lens.set(a2, s)
    ```
 
-These laws aren't just theoretical—they guarantee that lenses behave like mathematical getters and setters. The annotation processor generates lenses that satisfy these laws automatically.
+These laws aren't just theoretical; they guarantee that lenses behave like mathematical getters and setters. The annotation processor generates lenses that satisfy these laws automatically.
 
 ### Pattern: Lens as Structural Path
 
@@ -303,7 +303,7 @@ return shape;
 return circlePrism.modify(c -> new Circle(c.radius() * 2), shape);
 ```
 
-The prism version is more composable. You can store it, pass it around, and combine it with other optics—something you can't do with an `instanceof` expression.
+The prism version is more composable. You can store it, pass it around, and combine it with other optics, something you can't do with an `instanceof` expression.
 
 ---
 
@@ -385,7 +385,7 @@ Filters compose naturally with other optics, enabling precise targeting deep wit
 
 ### Aggregation with Folds
 
-Traversals support folding—aggregating all focused values into a single result. If you've used Java's `Stream.reduce()`, you already understand the core idea.
+Traversals support folding, which aggregates all focused values into a single result. If you've used Java's `Stream.reduce()`, you already understand the core idea.
 
 **What is a Fold?** A fold combines multiple values into one. Java developers use this pattern constantly:
 
@@ -443,7 +443,7 @@ Understanding how optics compose is essential for effective use. Here's the comp
 
 The pattern: composing with something "weaker" (that might not find anything, or might find many things) yields a `Traversal`. In higher-kinded-j, we use `asTraversal()` to convert lenses and prisms before composing them with `andThen()`.
 
-**Why Traversal?** You might wonder why `Prism + Lens` doesn't yield some special "zero-or-one" type. In practice, a `Traversal` that focuses on at most one element works identically—and the simpler type hierarchy means fewer concepts to learn. The `Traversals.getAll()` method returns a list that will have 0, 1, or many elements depending on the composed optics.
+**Why Traversal?** You might wonder why `Prism + Lens` doesn't yield some special "zero-or-one" type. In practice, a `Traversal` that focuses on at most one element works identically, and the simpler type hierarchy means fewer concepts to learn. The `Traversals.getAll()` method returns a list that will have 0, 1, or many elements depending on the composed optics.
 
 ### Building Deep Paths
 
@@ -532,7 +532,7 @@ Either<ValidationError, Employee> checked = streetLens.modifyF(
 );
 ```
 
-The same optic—the same composed path—works with any effect. This is the power of higher-kinded types: abstracting over the computational context.
+The same optic (the same composed path) works with any effect. This is the power of higher-kinded types: abstracting over the computational context.
 
 We'll explore `modifyF` fully in Article 5, where we'll use it for type-checking with error accumulation and interpretation with state. For now, know that the optics you're learning aren't limited to pure transformations.
 
@@ -540,7 +540,7 @@ We'll explore `modifyF` fully in Article 5, where we'll use it for type-checking
 
 ## Introducing the Expression Language
 
-Starting in Article 3, we'll build an expression language interpreter—the canonical showcase for optics. Here's a preview of the domain:
+Starting in Article 3, we'll build an expression language interpreter, the canonical showcase for optics. Here's a preview of the domain:
 
 ```java
 @GeneratePrisms
@@ -585,8 +585,14 @@ Key takeaways:
 3. **Annotation-driven generation eliminates boilerplate**: `@GenerateLenses` and `@GeneratePrisms` do the mechanical work
 4. **Effects come later**: The same optics work with pure transformations and effectful ones
 
-In Article 3, we'll apply these fundamentals to build the expression language AST, demonstrating how lenses and prisms work together for real-world tree manipulation.
+### The Higher-Kinded-J Advantage
+
+What makes Higher-Kinded-J particularly elegant is how it brings these functional programming patterns to Java without sacrificing type safety or requiring language extensions. The annotation processor generates clean, idiomatic code that integrates seamlessly with Java's records and sealed interfaces. You get the full power of composable optics with the expressiveness of higher-kinded types, while the API remains approachable to Java developers unfamiliar with Haskell or Scala.
+
+The library's design philosophy prioritises practicality: minimal boilerplate, compile-time verification of optic laws, and clear composition semantics. Rather than fighting Java's type system, Higher-Kinded-J works with it, using witness types and type-class patterns that feel natural once understood.
+
+In Article 3, we'll apply these fundamentals to build the expression language AST, demonstrating how lenses and prisms work together for real-world tree manipulation. Higher-Kinded-J will prove invaluable here, allowing us to define recursive traversals over the expression tree with elegant, declarative code.
 
 ---
 
-*Next: [Article 3: Building an Expression Language—The AST and Basic Optics](article-3-ast-basic-optics.md)*
+*Next: [Article 3: Building an Expression Language: The AST and Basic Optics](article-3-ast-basic-optics.md)*
