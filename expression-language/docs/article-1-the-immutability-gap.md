@@ -192,6 +192,8 @@ This asymmetry isn't just inconvenient—it actively discourages immutability. D
 
 The promise of modern Java—clean, immutable, data-oriented code—remains half-fulfilled. Pattern matching gave us elegant reading. Now we need elegant writing.
 
+[Higher-Kinded-J](https://github.com/higher-kinded-j/higher-kinded-j) is a new library that brings the full power of optics to Java. Throughout this series, we'll use it to demonstrate how these patterns work in practice—with annotation-driven generation that eliminates boilerplate while preserving type safety.
+
 **Pattern matching is half the puzzle; optics complete it.**
 
 ---
@@ -313,7 +315,7 @@ Optics compose, but the result type depends on what you're composing:
 
 The intuition: composing with something "weaker" yields a Traversal. A lens through a prism might not find anything (the prism might not match). A lens through a traversal might find many things.
 
-In higher-kinded-j, the `Traversal` type handles all these cases uniformly—whether the focus is zero, one, or many elements. This simplifies the type hierarchy compared to libraries that introduce separate "affine" or "optional" optic types.
+Some optics libraries introduce additional types like "affine" or "optional" for the zero-or-one case. Higher-Kinded-J takes a simpler approach: `Traversal` handles all these cases uniformly—whether the focus is zero, one, or many elements.
 
 ### When to Use Each
 
