@@ -185,7 +185,14 @@ Java 25 features used:
 - **Unnamed patterns (`_`)** — Ignore unneeded components
 - **Sealed interfaces** — Exhaustiveness checking
 
-The optics implementations simulate what higher-kinded-j auto-generates with `@GenerateLenses` and `@GeneratePrisms`.
+The optics implementations simulate what Higher-Kinded-J auto-generates with `@GenerateLenses` and `@GeneratePrisms`.
+
+## Spotless Configuration
+
+The project uses Spotless for code formatting matching Higher-Kinded-J's style:
+- Google Java Format
+- MIT License headers
+- Unix line endings
 
 ## What's Next
 
