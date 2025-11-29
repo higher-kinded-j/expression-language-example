@@ -49,7 +49,8 @@ public sealed interface Expr {
     return switch (this) {
       case Literal(var v) -> formatLiteral(v);
       case Variable(var n) -> n;
-      case Binary(var l, var op, var r) -> "(" + l.format() + " " + op.symbol() + " " + r.format() + ")";
+      case Binary(var l, var op, var r) ->
+          "(" + l.format() + " " + op.symbol() + " " + r.format() + ")";
       case Conditional(var c, var t, var e) ->
           "(if " + c.format() + " then " + t.format() + " else " + e.format() + ")";
     };

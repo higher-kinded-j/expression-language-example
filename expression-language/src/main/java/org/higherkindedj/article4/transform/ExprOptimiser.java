@@ -195,37 +195,37 @@ public final class ExprOptimiser {
 
   private static Expr simplifyIdentity(Expr expr) {
     return switch (expr) {
-        // x + 0 → x, 0 + x → x
+      // x + 0 → x, 0 + x → x
       case Binary(var x, var op, Literal(Integer i)) when op == ADD && i == 0 -> x;
       case Binary(Literal(Integer i), var op, var x) when op == ADD && i == 0 -> x;
 
-        // x - 0 → x
+      // x - 0 → x
       case Binary(var x, var op, Literal(Integer i)) when op == SUB && i == 0 -> x;
 
-        // x * 1 → x, 1 * x → x
+      // x * 1 → x, 1 * x → x
       case Binary(var x, var op, Literal(Integer i)) when op == MUL && i == 1 -> x;
       case Binary(Literal(Integer i), var op, var x) when op == MUL && i == 1 -> x;
 
-        // x * 0 → 0, 0 * x → 0
+      // x * 0 → 0, 0 * x → 0
       case Binary(_, var op, Literal(Integer i)) when op == MUL && i == 0 -> new Literal(0);
       case Binary(Literal(Integer i), var op, _) when op == MUL && i == 0 -> new Literal(0);
 
-        // x / 1 → x
+      // x / 1 → x
       case Binary(var x, var op, Literal(Integer i)) when op == DIV && i == 1 -> x;
 
-        // x && true → x, true && x → x
+      // x && true → x, true && x → x
       case Binary(var x, var op, Literal(Boolean b)) when op == AND && b -> x;
       case Binary(Literal(Boolean b), var op, var x) when op == AND && b -> x;
 
-        // x || false → x, false || x → x
+      // x || false → x, false || x → x
       case Binary(var x, var op, Literal(Boolean b)) when op == OR && !b -> x;
       case Binary(Literal(Boolean b), var op, var x) when op == OR && !b -> x;
 
-        // x && false → false
+      // x && false → false
       case Binary(_, var op, Literal(Boolean b)) when op == AND && !b -> new Literal(false);
       case Binary(Literal(Boolean b), var op, _) when op == AND && !b -> new Literal(false);
 
-        // x || true → true
+      // x || true → true
       case Binary(_, var op, Literal(Boolean b)) when op == OR && b -> new Literal(true);
       case Binary(Literal(Boolean b), var op, _) when op == OR && b -> new Literal(true);
 

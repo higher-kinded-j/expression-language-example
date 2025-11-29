@@ -15,32 +15,25 @@ package org.higherkindedj.article4.demo;
 public final class Article4Demo {
 
   public static void main(String[] args) {
-    System.out.println(
-        "╔══════════════════════════════════════════════════════════════════╗");
-    System.out.println(
-        "║        Article 4: Tree Traversals and Pattern Rewrites          ║");
-    System.out.println(
-        "║        Functional Optics for Modern Java                        ║");
-    System.out.println(
-        "╚══════════════════════════════════════════════════════════════════╝");
+    System.out.println("╔══════════════════════════════════════════════════════════════════╗");
+    System.out.println("║        Article 4: Tree Traversals and Pattern Rewrites          ║");
+    System.out.println("║        Functional Optics for Modern Java                        ║");
+    System.out.println("╚══════════════════════════════════════════════════════════════════╝");
     System.out.println();
 
     // Run Traversal demo
     TraversalDemo.main(args);
 
     System.out.println();
-    System.out.println(
-        "────────────────────────────────────────────────────────────────────");
+    System.out.println("────────────────────────────────────────────────────────────────────");
     System.out.println();
 
     // Run Optimiser demo
     OptimiserDemo.main(args);
 
     System.out.println();
-    System.out.println(
-        "════════════════════════════════════════════════════════════════════");
+    System.out.println("════════════════════════════════════════════════════════════════════");
     System.out.println("Article 4 demonstrations complete.");
-    System.out.println(
-        "════════════════════════════════════════════════════════════════════");
+    System.out.println("════════════════════════════════════════════════════════════════════");
   }
 }

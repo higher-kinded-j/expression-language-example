@@ -13,8 +13,8 @@ import org.higherkindedj.article3.ast.Expr.Variable;
  * Utilities for transforming expression trees.
  *
  * <p>This class demonstrates the data-oriented programming approach to tree transformations.
- * Instead of embedding transformation logic inside each AST node (visitor pattern), we use
- * pattern matching over the sealed interface to handle each variant externally.
+ * Instead of embedding transformation logic inside each AST node (visitor pattern), we use pattern
+ * matching over the sealed interface to handle each variant externally.
  *
  * <p>In Article 4, we'll replace this with proper traversals. For now, this provides a reusable
  * recursive transformation pattern.

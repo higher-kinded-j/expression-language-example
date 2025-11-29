@@ -136,12 +136,13 @@ public final class ExprDemo {
     // Compose: Expr → Binary → Expr (left operand)
     Prism<Expr, Binary> binaryPrism = ExprPrisms.binary();
     Lens<Binary, Expr> leftLens = BinaryLenses.left();
-    Traversal<Expr, Expr> binaryLeft =
-        binaryPrism.asTraversal().andThen(leftLens.asTraversal());
+    Traversal<Expr, Expr> binaryLeft = binaryPrism.asTraversal().andThen(leftLens.asTraversal());
 
     Expr bin = new Binary(new Literal(1), BinaryOp.ADD, new Literal(2));
 
-    System.out.println("\nGet left from 1+2: " + Traversals.getAll(binaryLeft, bin).stream().map(Expr::format).toList());
+    System.out.println(
+        "\nGet left from 1+2: "
+            + Traversals.getAll(binaryLeft, bin).stream().map(Expr::format).toList());
     System.out.println("Get left from Literal 42: " + Traversals.getAll(binaryLeft, lit));
 
     // Modify the left operand

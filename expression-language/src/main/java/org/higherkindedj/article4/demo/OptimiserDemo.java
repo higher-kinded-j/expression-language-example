@@ -50,8 +50,7 @@ public final class OptimiserDemo {
             new Binary(new Literal(4), MUL, new Literal(5))));
 
     // Boolean operations
-    showPass(
-        "true && false", new Binary(new Literal(true), AND, new Literal(false)));
+    showPass("true && false", new Binary(new Literal(true), AND, new Literal(false)));
 
     // Comparisons
     showPass("10 > 5", new Binary(new Literal(10), GT, new Literal(5)));
@@ -61,14 +60,11 @@ public final class OptimiserDemo {
     showPass(
         "\"hello\" + \" \" + \"world\"",
         new Binary(
-            new Binary(new Literal("hello"), ADD, new Literal(" ")),
-            ADD,
-            new Literal("world")));
+            new Binary(new Literal("hello"), ADD, new Literal(" ")), ADD, new Literal("world")));
 
     // Mixed: constants and variables
     Expr mixed =
-        new Binary(
-            new Binary(new Literal(1), ADD, new Literal(2)), ADD, new Variable("x"));
+        new Binary(new Binary(new Literal(1), ADD, new Literal(2)), ADD, new Variable("x"));
     showPass("(1 + 2) + x", mixed);
 
     System.out.println();
@@ -145,8 +141,7 @@ public final class OptimiserDemo {
 
     // (x + 0) * 1 → x * 1 → x
     Expr cascade2 =
-        new Binary(
-            new Binary(new Variable("x"), ADD, new Literal(0)), MUL, new Literal(1));
+        new Binary(new Binary(new Variable("x"), ADD, new Literal(0)), MUL, new Literal(1));
     showFullOptimisation("(x + 0) * 1", cascade2);
 
     // if (true && true) then (y * 1) else (z + 0) → if true then y else z → y
@@ -167,19 +162,12 @@ public final class OptimiserDemo {
     // if (true && (1 < 2)) then ((x + 0) * 1 + (2 * 3)) else (y * 0 + z)
     Expr complex =
         new Conditional(
+            new Binary(new Literal(true), AND, new Binary(new Literal(1), LT, new Literal(2))),
             new Binary(
-                new Literal(true), AND, new Binary(new Literal(1), LT, new Literal(2))),
-            new Binary(
-                new Binary(
-                    new Binary(new Variable("x"), ADD, new Literal(0)),
-                    MUL,
-                    new Literal(1)),
+                new Binary(new Binary(new Variable("x"), ADD, new Literal(0)), MUL, new Literal(1)),
                 ADD,
                 new Binary(new Literal(2), MUL, new Literal(3))),
-            new Binary(
-                new Binary(new Variable("y"), MUL, new Literal(0)),
-                ADD,
-                new Variable("z")));
+            new Binary(new Binary(new Variable("y"), MUL, new Literal(0)), ADD, new Variable("z")));
 
     System.out.println("Complex expression:");
     System.out.println("  " + complex.format());

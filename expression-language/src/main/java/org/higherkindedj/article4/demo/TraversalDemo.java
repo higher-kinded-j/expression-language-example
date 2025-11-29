@@ -161,8 +161,7 @@ public final class TraversalDemo {
     Expr expr =
         new Conditional(
             new Binary(new Variable("x"), GT, new Variable("y")),
-            new Binary(
-                new Binary(new Variable("x"), ADD, new Literal(1)), MUL, new Variable("z")),
+            new Binary(new Binary(new Variable("x"), ADD, new Literal(1)), MUL, new Variable("z")),
             new Binary(
                 new Binary(new Variable("y"), SUB, new Variable("z")), ADD, new Variable("w")));
 
