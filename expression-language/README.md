@@ -8,11 +8,11 @@ This branch contains the companion code for Article 2 of the "Functional Optics 
 
 Building on the foundation from Article 1, this branch adds:
 
-- **Complete optics implementation** — Lens, Prism, Traversal, and Optional (affine)
-- **Prisms for sum types** — Type-safe access to sealed interface variants
-- **Traversals for collections** — Bulk operations with filtering and aggregation
-- **Composition patterns** — Deep path building through multiple optic types
-- **Expression Language preview** — AST structure for Articles 3-5
+- **Complete optics implementation**: Lens, Prism, and Traversal
+- **Prisms for sum types**: Type-safe access to sealed interface variants
+- **Traversals for collections**: Bulk operations with filtering and aggregation
+- **Composition patterns**: Deep path building through multiple optic types
+- **Expression Language preview**: AST structure for Articles 3-5
 
 ## Running the Demos
 
@@ -22,11 +22,11 @@ gradle run
 
 This runs all Article 2 demonstrations:
 
-1. **LensDemo** — Basic lens operations, composition, and lens laws
-2. **PrismDemo** — Sum type access, type-safe downcasting
-3. **TraversalDemo** — Collection traversals, filtering, aggregation
-4. **CompositionDemo** — Deep path composition, manual vs optics comparison
-5. **ExpressionPreviewDemo** — Preview of the AST for the expression language
+1. **LensDemo**: Basic lens operations, composition, and lens laws
+2. **PrismDemo**: Sum type access, type-safe downcasting
+3. **TraversalDemo**: Collection traversals, filtering, aggregation
+4. **CompositionDemo**: Deep path composition, manual vs optics comparison
+5. **ExpressionPreviewDemo**: Preview of the AST for the expression language
 
 ## Key Concepts Introduced
 
@@ -52,9 +52,9 @@ This runs all Article 2 demonstrations:
 | First | Second | Result |
 |-------|--------|--------|
 | Lens | Lens | Lens |
-| Lens | Prism | Optional |
+| Lens | Prism | Traversal |
 | Lens | Traversal | Traversal |
-| Prism | Lens | Optional |
+| Prism | Lens | Traversal |
 | Prism | Prism | Prism |
 | Traversal | * | Traversal |
 
@@ -125,6 +125,8 @@ Article 3 will begin building the Expression Language interpreter:
 - Variable renaming and constant folding
 - Pattern-based transformations
 
+Higher-Kinded-J's optics generation will be central to this work, enabling us to navigate and transform the AST with minimal boilerplate. The `@GeneratePrisms` annotation on our sealed `Expr` interface will generate type-safe accessors for each variant, whilst `@GenerateLenses` on the records will provide field access. Together, they compose into powerful traversals that can reach any part of the expression tree.
+
 ## Previous Article
 
-- [Article 1: The Immutability Gap](docs/article-1-the-immutability-gap.md) — Problem and basic solution
+- [Article 1: The Immutability Gap](docs/article-1-the-immutability-gap.md): Problem and basic solution
