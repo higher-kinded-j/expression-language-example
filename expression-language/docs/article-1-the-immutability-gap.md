@@ -302,14 +302,18 @@ Optics compose, but the result type depends on what you're composing:
 | First | Second | Result |
 |-------|--------|--------|
 | Lens | Lens | Lens |
-| Lens | Prism | Optional (affine) |
+| Lens | Prism | Traversal |
 | Lens | Traversal | Traversal |
-| Prism | Lens | Optional |
+| Prism | Lens | Traversal |
 | Prism | Prism | Prism |
+| Prism | Traversal | Traversal |
 | Traversal | Lens | Traversal |
+| Traversal | Prism | Traversal |
 | Traversal | Traversal | Traversal |
 
-The intuition: composing with something "weaker" yields the weaker type. A lens through a prism might not find anything (the prism might not match). A lens through a traversal might find many things.
+The intuition: composing with something "weaker" yields a Traversal. A lens through a prism might not find anything (the prism might not match). A lens through a traversal might find many things.
+
+In higher-kinded-j, the `Traversal` type handles all these cases uniformly—whether the focus is zero, one, or many elements. This simplifies the type hierarchy compared to libraries that introduce separate "affine" or "optional" optic types.
 
 ### When to Use Each
 
