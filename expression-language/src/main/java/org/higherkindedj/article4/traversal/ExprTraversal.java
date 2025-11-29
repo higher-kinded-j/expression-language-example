@@ -76,23 +76,25 @@ public final class ExprTraversal {
   }
 
   /**
-   * A traversal targeting all descendant expressions (including the root).
+   * A traversal targeting the root expression only.
    *
-   * <p>This traversal visits every node in the expression tree using bottom-up order: children are
-   * processed before their parents.
+   * <p>This traversal focuses on a single element (the expression itself). For visiting all nodes
+   * in a tree, use the pure transformation helpers {@link #transformBottomUp} or {@link
+   * #transformTopDown}, which provide proper recursive semantics.
    *
-   * @return a traversal over all expressions in the tree
+   * <p>Note: Effect-polymorphic recursive tree traversal requires monadic sequencing, which is
+   * beyond what {@code Applicative} provides. For effectful operations over all nodes, consider
+   * collecting nodes first with {@code getAll} on composed traversals, or use the pure
+   * transformation helpers.
+   *
+   * @return a traversal focusing on the root expression
    */
-  public static Traversal<Expr, Expr> allDescendants() {
+  public static Traversal<Expr, Expr> self() {
     return new Traversal<>() {
       @Override
       public <F> Kind<F, Expr> modifyF(
           Function<Expr, Kind<F, Expr>> f, Expr source, Applicative<F> applicative) {
-        // Bottom-up: first transform children, then this node
-        Kind<F, Expr> withChildrenTransformed =
-            children().modifyF(child -> this.modifyF(f, child, applicative), source, applicative);
-        // Use Applicative.flatMap if available (Monad), otherwise use map + join pattern
-        return applicative.flatMap(withChildrenTransformed, f);
+        return f.apply(source);
       }
     };
   }

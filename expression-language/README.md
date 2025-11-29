@@ -48,13 +48,13 @@ public interface Traversal<S, A> {
 // Visit immediate children only
 Traversal<Expr, Expr> children = ExprTraversal.children();
 
-// Visit all nodes in the tree
-Traversal<Expr, Expr> all = ExprTraversal.allDescendants();
+// Focus on the expression itself (for composition)
+Traversal<Expr, Expr> self = ExprTraversal.self();
 
-// Transform from leaves to root
+// Transform from leaves to root (pure)
 Expr result = ExprTraversal.transformBottomUp(expr, transform);
 
-// Transform from root to leaves
+// Transform from root to leaves (pure)
 Expr result = ExprTraversal.transformTopDown(expr, transform);
 ```
 
