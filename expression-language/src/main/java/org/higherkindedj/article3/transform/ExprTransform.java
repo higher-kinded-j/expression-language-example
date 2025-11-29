@@ -12,6 +12,10 @@ import org.higherkindedj.article3.ast.Expr.Variable;
 /**
  * Utilities for transforming expression trees.
  *
+ * <p>This class demonstrates the data-oriented programming approach to tree transformations.
+ * Instead of embedding transformation logic inside each AST node (visitor pattern), we use
+ * pattern matching over the sealed interface to handle each variant externally.
+ *
  * <p>In Article 4, we'll replace this with proper traversals. For now, this provides a reusable
  * recursive transformation pattern.
  */
@@ -29,10 +33,10 @@ public final class ExprTransform {
    */
   public static Expr transformBottomUp(Expr expr, Function<Expr, Expr> transform) {
     // First, recursively transform children
+    // Java 22+: Multi-pattern case combining leaf nodes
     Expr transformed =
         switch (expr) {
-          case Literal(_) -> expr;
-          case Variable(_) -> expr;
+          case Literal(_), Variable(_) -> expr;
           case Binary(var l, var op, var r) ->
               new Binary(transformBottomUp(l, transform), op, transformBottomUp(r, transform));
           case Conditional(var c, var t, var e) ->
@@ -60,9 +64,9 @@ public final class ExprTransform {
     Expr transformed = transform.apply(expr);
 
     // Then recursively transform children
+    // Java 22+: Multi-pattern case combining leaf nodes
     return switch (transformed) {
-      case Literal(_) -> transformed;
-      case Variable(_) -> transformed;
+      case Literal(_), Variable(_) -> transformed;
       case Binary(var l, var op, var r) ->
           new Binary(transformTopDown(l, transform), op, transformTopDown(r, transform));
       case Conditional(var c, var t, var e) ->

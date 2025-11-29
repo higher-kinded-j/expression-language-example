@@ -5,8 +5,19 @@ package org.higherkindedj.article3.ast;
 /**
  * The expression AST for the expression language.
  *
- * <p>This is a minimal 4-variant AST that covers:
+ * <p>This sealed interface demonstrates Java's data-oriented programming (DOP) approach to AST
+ * design. Rather than using the traditional Visitor pattern with abstract methods, we model
+ * expressions as pure data—a closed hierarchy of immutable records that can be pattern-matched
+ * externally.
  *
+ * <p><strong>Key DOP principles demonstrated:</strong>
+ * <ul>
+ *   <li>Data as immutable values — Records are transparent, immutable carriers
+ *   <li>Behaviour separate from data — Operations are standalone functions, not embedded methods
+ *   <li>Pattern matching for polymorphism — Switch expressions replace virtual dispatch
+ * </ul>
+ *
+ * <p>This is a minimal 4-variant AST that covers:
  * <ul>
  *   <li>{@link Literal} — constant values (integers, booleans, strings)
  *   <li>{@link Variable} — variable references
@@ -15,7 +26,8 @@ package org.higherkindedj.article3.ast;
  * </ul>
  *
  * <p>In production with higher-kinded-j, you would annotate this with {@code @GeneratePrisms} and
- * each record with {@code @GenerateLenses}.
+ * each record with {@code @GenerateLenses} to auto-generate optics for navigation and
+ * transformation.
  */
 public sealed interface Expr {
 

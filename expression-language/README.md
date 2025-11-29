@@ -2,17 +2,37 @@
 
 **Branch**: `article-3-ast-basic-optics`
 
-This branch contains the companion code for Article 3 of the "Functional Optics for Modern Java" series. It builds on Article 2 by introducing the Expression Language domain and applying optics to AST manipulation.
+This branch contains the companion code for Article 3 of the "Functional Optics for Modern Java" series. It builds on Article 2 by introducing the Expression Language domain and demonstrating how Java 25's data-oriented programming features combine with higher-kinded-j optics to create elegant AST manipulation.
+
+## Data-Oriented Programming in Action
+
+This branch showcases Java 25's data-oriented programming (DOP) approach:
+
+1. **Data as immutable values** — Records provide transparent, immutable data carriers
+2. **Behaviour separate from data** — Operations are standalone functions, not embedded methods
+3. **Pattern matching for polymorphism** — Switch expressions with guards replace virtual dispatch
+
+Instead of the traditional Visitor pattern, we use sealed interfaces + records + pattern matching for cleaner, more maintainable AST code.
 
 ## What's New in This Branch
 
 Building on the foundation from Articles 1 and 2, this branch adds:
 
-- **Expression Language AST** — A complete sealed interface hierarchy for expressions
+- **Expression Language AST** — A complete sealed interface hierarchy using DOP principles
 - **Auto-generated-style optics** — Lenses and prisms for the AST (simulating higher-kinded-j generation)
 - **Expression transformations** — Bottom-up and top-down tree traversal utilities
-- **Expression optimiser** — Constant folding and identity simplification
+- **Expression optimiser** — Constant folding and identity simplification using Java 25 patterns
 - **Optic composition** — Prism-to-lens composition for deep AST access
+
+## Java 25 Features Demonstrated
+
+This code showcases modern Java 25 capabilities:
+
+- **Switch expressions with record patterns** — Deconstruct nested records in one expression
+- **Pattern guards with `when` clauses** — Add conditions to pattern matches
+- **Multi-pattern cases** — Combine related patterns: `case Literal(_), Variable(_) -> ...`
+- **Unnamed patterns (`_`)** — Ignore components you don't need
+- **Sealed interfaces** — Exhaustiveness checking for sum types
 
 ## Running the Demos
 
@@ -27,9 +47,9 @@ This runs all Article 3 demonstrations:
 
 ## Key Concepts Introduced
 
-### Expression Language AST
+### Expression Language AST (DOP Style)
 
-A sealed interface hierarchy representing expressions:
+A sealed interface hierarchy representing expressions as pure data:
 
 ```java
 sealed interface Expr {
@@ -39,6 +59,33 @@ sealed interface Expr {
   record Conditional(Expr cond, Expr then_, Expr else_) implements Expr {}
 }
 ```
+
+### Why Not Visitor Pattern?
+
+Traditional OOP uses Visitor for AST operations. Compare:
+
+```java
+// Visitor: scattered logic, boilerplate
+class ConstantFoldingVisitor implements ExprVisitor<Expr> {
+    @Override public Expr visitBinary(Binary expr) { ... }
+    @Override public Expr visitLiteral(Literal expr) { ... }
+    // ... more visit methods
+}
+
+// DOP: logic in one place, declarative
+Expr foldConstants(Expr expr) {
+    return switch (expr) {
+        case Binary(Literal(var l), var op, Literal(var r)) ->
+            evaluate(l, op, r).map(Literal::new).orElse(expr);
+        case Binary(var l, var op, var r) ->
+            new Binary(foldConstants(l), op, foldConstants(r));
+        case Literal _, Variable _ -> expr;
+        // ...
+    };
+}
+```
+
+The DOP version is shorter, clearer, and has compiler-checked exhaustiveness.
 
 ### Optics for the AST
 
@@ -54,19 +101,19 @@ sealed interface Expr {
 - `BinaryLenses.left()`, `op()`, `right()` — Access Binary components
 - `ConditionalLenses.cond()`, `then_()`, `else_()` — Access Conditional components
 
-### Expression Transformations
+### Expression Optimiser with Java 25 Pattern Guards
 
-Recursive transformation patterns for tree operations:
+Clean, declarative optimisation rules:
 
 ```java
-// Transform all nodes from leaves to root
-ExprTransform.transformBottomUp(expr, transform);
-
-// Transform all nodes from root to leaves
-ExprTransform.transformTopDown(expr, transform);
+// Java 25: Switch expression with 'when' guards
+return switch (expr) {
+    case Binary(var left, BinaryOp.ADD, Literal(Integer v)) when v == 0 -> left;
+    case Binary(var left, BinaryOp.MUL, Literal(Integer v)) when v == 1 -> left;
+    case Binary(_, BinaryOp.MUL, Literal(Integer v)) when v == 0 -> new Literal(0);
+    default -> expr;
+};
 ```
-
-### Expression Optimiser
 
 Three optimisation passes:
 
@@ -99,7 +146,7 @@ src/main/java/org/higherkindedj/
 │
 └── article3/                    # NEW: Article 3 code
     ├── ast/                     # Expression Language AST
-    │   ├── Expr.java            # Sealed interface + records
+    │   ├── Expr.java            # Sealed interface + records (DOP style)
     │   └── BinaryOp.java        # Binary operators enum
     │
     ├── optics/                  # Optics for the AST
@@ -113,8 +160,8 @@ src/main/java/org/higherkindedj/
     │   └── ConditionalLenses.java  # Lenses for Conditional
     │
     ├── transform/               # Tree transformations
-    │   ├── ExprTransform.java   # Bottom-up/top-down traversal
-    │   └── ExprOptimiser.java   # Constant folding, simplification
+    │   ├── ExprTransform.java   # Bottom-up/top-down traversal (DOP style)
+    │   └── ExprOptimiser.java   # Constant folding with Java 25 patterns
     │
     └── demo/                    # Runnable demonstrations
         ├── ExprDemo.java        # AST building and optics
@@ -131,11 +178,12 @@ gradle compileJava
 
 This project uses **JDK 25** with the higher-kinded-j library (version 0.2.2-SNAPSHOT).
 
-Features used:
-- Unnamed variables (`_`) in lambda expressions and patterns
-- Record patterns in switch expressions
-- Sealed interfaces
-- Pattern matching for instanceof
+Java 25 features used:
+- **Switch expressions with record patterns** — Nested deconstruction
+- **Pattern guards (`when` clauses)** — Conditional pattern matching
+- **Multi-pattern cases** — `case A, B -> ...`
+- **Unnamed patterns (`_`)** — Ignore unneeded components
+- **Sealed interfaces** — Exhaustiveness checking
 
 The optics implementations simulate what higher-kinded-j auto-generates with `@GenerateLenses` and `@GeneratePrisms`.
 

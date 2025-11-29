@@ -11,7 +11,17 @@ import org.higherkindedj.article3.ast.Expr.Literal;
 /**
  * Expression optimiser implementing constant folding and identity simplification.
  *
- * <p>This demonstrates how optics patterns apply to AST transformations.
+ * <p>This demonstrates the data-oriented programming approach to AST optimisation. Rather than
+ * using the Visitor pattern, we use Java 25's enhanced pattern matching with guards to express
+ * optimisation rules declaratively.
+ *
+ * <p>Key Java 25 features demonstrated:
+ * <ul>
+ *   <li>Switch expressions with record patterns
+ *   <li>Pattern guards with {@code when} clauses
+ *   <li>Nested record patterns for deep matching
+ *   <li>Unnamed patterns ({@code _}) for ignored components
+ * </ul>
  */
 public final class ExprOptimiser {
   private ExprOptimiser() {}
@@ -53,15 +63,18 @@ public final class ExprOptimiser {
    *   <li>{@code 1 + 2} → {@code 3}
    *   <li>{@code true && false} → {@code false}
    * </ul>
+   *
+   * <p>Uses Java 25 switch expression with nested record patterns.
    */
   public static Expr foldConstants(Expr expr) {
-    if (expr instanceof Binary(Literal(Object lv), BinaryOp op, Literal(Object rv))) {
-      Object result = evaluate(lv, op, rv);
-      if (result != null) {
-        return new Literal(result);
+    // Java 25: Switch with nested record patterns
+    return switch (expr) {
+      case Binary(Literal(Object lv), BinaryOp op, Literal(Object rv)) -> {
+        Object result = evaluate(lv, op, rv);
+        yield result != null ? new Literal(result) : expr;
       }
-    }
-    return expr;
+      default -> expr;
+    };
   }
 
   /**
@@ -76,71 +89,38 @@ public final class ExprOptimiser {
    *   <li>{@code x && true} → {@code x}
    *   <li>{@code x || false} → {@code x}
    * </ul>
+   *
+   * <p>Uses Java 25 pattern matching with guards for declarative rule expression.
    */
   public static Expr simplifyIdentities(Expr expr) {
-    if (expr instanceof Binary(var left, BinaryOp op, Literal(Object rv))) {
-      // x + 0 = x, x - 0 = x
-      if ((op == BinaryOp.ADD || op == BinaryOp.SUB) && rv.equals(0)) {
-        return left;
-      }
-      // x * 1 = x, x / 1 = x
-      if ((op == BinaryOp.MUL || op == BinaryOp.DIV) && rv.equals(1)) {
-        return left;
-      }
-      // x * 0 = 0
-      if (op == BinaryOp.MUL && rv.equals(0)) {
-        return new Literal(0);
-      }
-      // x && true = x
-      if (op == BinaryOp.AND && rv.equals(true)) {
-        return left;
-      }
-      // x || false = x
-      if (op == BinaryOp.OR && rv.equals(false)) {
-        return left;
-      }
-      // x && false = false
-      if (op == BinaryOp.AND && rv.equals(false)) {
-        return new Literal(false);
-      }
-      // x || true = true
-      if (op == BinaryOp.OR && rv.equals(true)) {
-        return new Literal(true);
-      }
-    }
+    // Java 25: Switch expression with 'when' guards for clean rule expression
+    return switch (expr) {
+      // Arithmetic identities with right literal
+      case Binary(var left, BinaryOp.ADD, Literal(Integer v)) when v == 0 -> left;
+      case Binary(var left, BinaryOp.SUB, Literal(Integer v)) when v == 0 -> left;
+      case Binary(var left, BinaryOp.MUL, Literal(Integer v)) when v == 1 -> left;
+      case Binary(var left, BinaryOp.DIV, Literal(Integer v)) when v == 1 -> left;
+      case Binary(_, BinaryOp.MUL, Literal(Integer v)) when v == 0 -> new Literal(0);
 
-    if (expr instanceof Binary(Literal(Object lv), BinaryOp op, var right)) {
-      // 0 + x = x
-      if (op == BinaryOp.ADD && lv.equals(0)) {
-        return right;
-      }
-      // 1 * x = x
-      if (op == BinaryOp.MUL && lv.equals(1)) {
-        return right;
-      }
-      // 0 * x = 0
-      if (op == BinaryOp.MUL && lv.equals(0)) {
-        return new Literal(0);
-      }
-      // true && x = x
-      if (op == BinaryOp.AND && lv.equals(true)) {
-        return right;
-      }
-      // false || x = x
-      if (op == BinaryOp.OR && lv.equals(false)) {
-        return right;
-      }
-      // false && x = false
-      if (op == BinaryOp.AND && lv.equals(false)) {
-        return new Literal(false);
-      }
-      // true || x = true
-      if (op == BinaryOp.OR && lv.equals(true)) {
-        return new Literal(true);
-      }
-    }
+      // Arithmetic identities with left literal
+      case Binary(Literal(Integer v), BinaryOp.ADD, var right) when v == 0 -> right;
+      case Binary(Literal(Integer v), BinaryOp.MUL, var right) when v == 1 -> right;
+      case Binary(Literal(Integer v), BinaryOp.MUL, _) when v == 0 -> new Literal(0);
 
-    return expr;
+      // Boolean identities with right literal
+      case Binary(var left, BinaryOp.AND, Literal(Boolean v)) when v -> left;
+      case Binary(var left, BinaryOp.OR, Literal(Boolean v)) when !v -> left;
+      case Binary(_, BinaryOp.AND, Literal(Boolean v)) when !v -> new Literal(false);
+      case Binary(_, BinaryOp.OR, Literal(Boolean v)) when v -> new Literal(true);
+
+      // Boolean identities with left literal
+      case Binary(Literal(Boolean v), BinaryOp.AND, var right) when v -> right;
+      case Binary(Literal(Boolean v), BinaryOp.OR, var right) when !v -> right;
+      case Binary(Literal(Boolean v), BinaryOp.AND, _) when !v -> new Literal(false);
+      case Binary(Literal(Boolean v), BinaryOp.OR, _) when v -> new Literal(true);
+
+      default -> expr;
+    };
   }
 
   /**
@@ -152,24 +132,27 @@ public final class ExprOptimiser {
    *   <li>{@code if true then a else b} → {@code a}
    *   <li>{@code if false then a else b} → {@code b}
    * </ul>
+   *
+   * <p>Uses Java 25 pattern matching with guards for declarative rule expression.
    */
   public static Expr simplifyConditionals(Expr expr) {
-    if (expr instanceof Conditional(Literal(Object cv), var then_, var else_)) {
-      if (cv.equals(true)) {
-        return then_;
-      }
-      if (cv.equals(false)) {
-        return else_;
-      }
-    }
-    return expr;
+    // Java 25: Switch with pattern guards for boolean conditions
+    return switch (expr) {
+      case Conditional(Literal(Boolean cv), var then_, _) when cv -> then_;
+      case Conditional(Literal(Boolean cv), _, var else_) when !cv -> else_;
+      default -> expr;
+    };
   }
 
-  /** Evaluate a binary operation on literal values. */
+  /**
+   * Evaluate a binary operation on literal values.
+   *
+   * <p>Uses Java 25's type pattern matching with 'when' guards for concise type dispatch.
+   */
   private static Object evaluate(Object left, BinaryOp op, Object right) {
-    // Integer arithmetic
-    if (left instanceof Integer l && right instanceof Integer r) {
-      return switch (op) {
+    // Java 25: Switch on the left operand with type patterns and guards
+    return switch (left) {
+      case Integer l when right instanceof Integer r -> switch (op) {
         case ADD -> l + r;
         case SUB -> l - r;
         case MUL -> l * r;
@@ -182,32 +165,19 @@ public final class ExprOptimiser {
         case GE -> l >= r;
         default -> null;
       };
-    }
-
-    // Boolean logic
-    if (left instanceof Boolean l && right instanceof Boolean r) {
-      return switch (op) {
+      case Boolean l when right instanceof Boolean r -> switch (op) {
         case AND -> l && r;
         case OR -> l || r;
         case EQ -> l.equals(r);
         case NE -> !l.equals(r);
         default -> null;
       };
-    }
-
-    // String concatenation
-    if (left instanceof String l && right instanceof String r && op == BinaryOp.ADD) {
-      return l + r;
-    }
-
-    // Equality for any type
-    if (op == BinaryOp.EQ) {
-      return left.equals(right);
-    }
-    if (op == BinaryOp.NE) {
-      return !left.equals(right);
-    }
-
-    return null;
+      case String l when right instanceof String r && op == BinaryOp.ADD -> l + r;
+      default -> switch (op) {
+        case EQ -> left.equals(right);
+        case NE -> !left.equals(right);
+        default -> null;
+      };
+    };
   }
 }
