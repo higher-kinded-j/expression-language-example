@@ -3,6 +3,7 @@
 package org.higherkindedj.article5.typecheck;
 
 import java.util.List;
+import java.util.function.Function;
 import org.higherkindedj.article4.ast.BinaryOp;
 import org.higherkindedj.article4.ast.Expr;
 import org.higherkindedj.article4.ast.Expr.Binary;
@@ -52,15 +53,13 @@ public final class ExprTypeChecker {
   }
 
   private static Validated<List<TypeError>, Type> typeCheckLiteral(Object value) {
-    if (value instanceof Integer) {
-      return Validated.valid(Type.INT);
-    } else if (value instanceof Boolean) {
-      return Validated.valid(Type.BOOL);
-    } else if (value instanceof String) {
-      return Validated.valid(Type.STRING);
-    } else {
-      return Validated.invalid(TypeError.single("Unknown literal type: " + value.getClass()));
-    }
+    return switch (value) {
+      case Integer _ -> Validated.valid(Type.INT);
+      case Boolean _ -> Validated.valid(Type.BOOL);
+      case String _ -> Validated.valid(Type.STRING);
+      default -> Validated.invalid(
+          TypeError.single("Unknown literal type: %s".formatted(value.getClass().getSimpleName())));
+    };
   }
 
   private static Validated<List<TypeError>, Type> typeCheckVariable(String name, TypeEnv env) {
@@ -78,11 +77,9 @@ public final class ExprTypeChecker {
     // ap applies a function wrapped in Validated to a value wrapped in Validated
     // The semigroup combines errors from both sides
     // Note: explicit cast needed for variance compatibility with ap's signature
-    Validated<List<TypeError>, java.util.function.Function<? super Type, ? extends Type>> partialCheck =
+    Validated<List<TypeError>, Function<? super Type, ? extends Type>> partialCheck =
         leftType.map(
-            lt ->
-                (java.util.function.Function<? super Type, ? extends Type>)
-                    (rt -> checkBinaryTypesResult(op, lt, rt)));
+            lt -> (Function<? super Type, ? extends Type>) (rt -> checkBinaryTypesResult(op, lt, rt)));
 
     Validated<List<TypeError>, Type> combinedTypes = rightType.ap(partialCheck, ERROR_SEMIGROUP);
 
@@ -91,8 +88,7 @@ public final class ExprTypeChecker {
       if (type == null) {
         // checkBinaryTypesResult returned null to signal an error was found
         // We need to re-check to get the actual error
-        return leftType.flatMap(lt ->
-            rightType.flatMap(rt -> checkBinaryTypes(op, lt, rt)));
+        return leftType.flatMap(lt -> rightType.flatMap(rt -> checkBinaryTypes(op, lt, rt)));
       }
       return Validated.valid(type);
     });
@@ -117,9 +113,7 @@ public final class ExprTypeChecker {
     // Check condition first, then check branches
     // Use flatMap for sequential checks after accumulating sub-expression errors
     return condType.flatMap(ct ->
-        thenType.flatMap(tt ->
-            elseType.flatMap(et ->
-                checkConditionalTypes(ct, tt, et))));
+        thenType.flatMap(tt -> elseType.flatMap(et -> checkConditionalTypes(ct, tt, et))));
   }
 
   private static Validated<List<TypeError>, Type> checkBinaryTypes(
@@ -127,53 +121,33 @@ public final class ExprTypeChecker {
     return switch (op) {
       case ADD, SUB, MUL, DIV -> {
         if (left != Type.INT || right != Type.INT) {
-          yield Validated.invalid(
-              TypeError.single(
-                  "Arithmetic operator "
-                      + op.symbol()
-                      + " requires INT operands, got "
-                      + left
-                      + " and "
-                      + right));
+          yield Validated.invalid(TypeError.single(
+              "Arithmetic operator '%s' requires INT operands, got %s and %s"
+                  .formatted(op.symbol(), left, right)));
         }
         yield Validated.valid(Type.INT);
       }
       case AND, OR -> {
         if (left != Type.BOOL || right != Type.BOOL) {
-          yield Validated.invalid(
-              TypeError.single(
-                  "Logical operator "
-                      + op.symbol()
-                      + " requires BOOL operands, got "
-                      + left
-                      + " and "
-                      + right));
+          yield Validated.invalid(TypeError.single(
+              "Logical operator '%s' requires BOOL operands, got %s and %s"
+                  .formatted(op.symbol(), left, right)));
         }
         yield Validated.valid(Type.BOOL);
       }
       case EQ, NE -> {
         if (left != right) {
-          yield Validated.invalid(
-              TypeError.single(
-                  "Equality operator "
-                      + op.symbol()
-                      + " requires matching types, got "
-                      + left
-                      + " and "
-                      + right));
+          yield Validated.invalid(TypeError.single(
+              "Equality operator '%s' requires matching types, got %s and %s"
+                  .formatted(op.symbol(), left, right)));
         }
         yield Validated.valid(Type.BOOL);
       }
       case LT, LE, GT, GE -> {
         if (left != Type.INT || right != Type.INT) {
-          yield Validated.invalid(
-              TypeError.single(
-                  "Comparison operator "
-                      + op.symbol()
-                      + " requires INT operands, got "
-                      + left
-                      + " and "
-                      + right));
+          yield Validated.invalid(TypeError.single(
+              "Comparison operator '%s' requires INT operands, got %s and %s"
+                  .formatted(op.symbol(), left, right)));
         }
         yield Validated.valid(Type.BOOL);
       }
@@ -185,17 +159,16 @@ public final class ExprTypeChecker {
     List<TypeError> errors = List.of();
 
     if (cond != Type.BOOL) {
-      errors =
-          ERROR_SEMIGROUP.combine(
-              errors, TypeError.single("Conditional requires BOOL condition, got " + cond));
+      errors = ERROR_SEMIGROUP.combine(
+          errors,
+          TypeError.single("Conditional requires BOOL condition, got %s".formatted(cond)));
     }
 
     if (then_ != else_) {
-      errors =
-          ERROR_SEMIGROUP.combine(
-              errors,
-              TypeError.single(
-                  "Conditional branches must have same type, got " + then_ + " and " + else_));
+      errors = ERROR_SEMIGROUP.combine(
+          errors,
+          TypeError.single(
+              "Conditional branches must have same type, got %s and %s".formatted(then_, else_)));
     }
 
     if (!errors.isEmpty()) {
