@@ -138,34 +138,32 @@ Expr result = Traversals.modify(children, e -> {
 Using Higher-Kinded-J's `State` monad, transformations can track state:
 
 ```java
+import static org.higherkindedj.hkt.state.StateKindHelper.STATE;
+
 import org.higherkindedj.hkt.Kind;
 import org.higherkindedj.hkt.state.State;
 import org.higherkindedj.hkt.state.StateKind;
-import org.higherkindedj.hkt.state.StateKindHelper;
 import org.higherkindedj.hkt.state.StateMonad;
 import org.higherkindedj.hkt.state.StateTuple;
 
 StateMonad<Integer> stateMonad = new StateMonad<>();
 
-// Count and transform literals
+// Count and transform literals using modifyF with State effect
 Kind<StateKind.Witness<Integer>, Expr> stateKind = children.modifyF(
     e -> {
         if (e instanceof Literal(Integer i)) {
             State<Integer, Expr> countAndTransform =
-                State.<Integer>modify(count -> count + 1)
-                     .map(v -> new Literal(i * 10));
-            return StateKindHelper.STATE.widen(countAndTransform);
+                State.<Integer>modify(count -> count + 1).map(v -> new Literal(i * 10));
+            return STATE.widen(countAndTransform);
         }
-        return StateKindHelper.STATE.widen(State.pure(e));
+        return STATE.widen(State.pure(e));
     },
-    expression,
-    stateMonad
-);
+    expr,
+    stateMonad);
 
-StateTuple<Integer, Expr> result =
-    StateKindHelper.STATE.<Integer, Expr>narrow(stateKind).run(0);
-Expr transformed = result.value();
-int count = result.state();
+StateTuple<Integer, Expr> stateResult = STATE.narrow(stateKind).run(0);
+System.out.printf("Transformed: %s, count = %d%n",
+    stateResult.value().format(), stateResult.state());
 ```
 
 ---
@@ -532,35 +530,45 @@ We wrote the traversal once. Higher-Kinded-J's abstraction gives us all these be
 ### Example: Collecting Variables with State
 
 ```java
-import org.higherkindedj.hkt.Kind;
+import static org.higherkindedj.hkt.state.StateKindHelper.STATE;
+
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.higherkindedj.hkt.state.State;
-import org.higherkindedj.hkt.state.StateKind;
-import org.higherkindedj.hkt.state.StateKindHelper;
-import org.higherkindedj.hkt.state.StateMonad;
 import org.higherkindedj.hkt.state.StateTuple;
 
-// Define a collector function that records variable names in State
-Function<Expr, Kind<StateKind.Witness<Set<String>>, Expr>> collectVars = expr -> {
-    if (expr instanceof Variable(var name)) {
-        State<Set<String>, Expr> addVar = State.<Set<String>>modify(vars -> {
-            var newVars = new HashSet<>(vars);
-            newVars.add(name);
-            return newVars;
-        }).map(v -> expr);
-        return StateKindHelper.STATE.widen(addVar);
-    }
-    return StateKindHelper.STATE.widen(State.pure(expr));
-};
+// Define a collector that adds variable names to an immutable Set
+Function<Expr, State<Set<String>, Expr>> collector = e ->
+    e instanceof Variable(var name)
+        ? State.<Set<String>>modify(vars ->
+              Stream.concat(vars.stream(), Stream.of(name))
+                  .collect(Collectors.toUnmodifiableSet()))
+            .map(v -> e)
+        : State.pure(e);
 
-// Apply to all nodes using our traversal
-StateMonad<Set<String>> stateMonad = new StateMonad<>();
-Kind<StateKind.Witness<Set<String>>, Expr> result =
-    ExprTraversal.children().modifyF(collectVars, expression, stateMonad);
+// Use a recursive approach to visit all nodes
+private static State<Set<String>, Expr> collectVariablesRecursive(
+        Expr expr, Function<Expr, State<Set<String>, Expr>> collector) {
+    State<Set<String>, Expr> thisNode = collector.apply(expr);
+    return thisNode.flatMap(e -> switch (e) {
+        case Literal _, Variable _ -> State.pure(e);
+        case Binary(var l, var op, var r) ->
+            collectVariablesRecursive(l, collector).flatMap(newL ->
+                collectVariablesRecursive(r, collector).map(newR ->
+                    new Binary(newL, op, newR)));
+        case Conditional(var c, var t, var el) ->
+            collectVariablesRecursive(c, collector).flatMap(newC ->
+                collectVariablesRecursive(t, collector).flatMap(newT ->
+                    collectVariablesRecursive(el, collector).map(newE ->
+                        new Conditional(newC, newT, newE))));
+    });
+}
 
-// Run the stateful computation starting with an empty set
-StateTuple<Set<String>, Expr> tuple =
-    StateKindHelper.STATE.<Set<String>, Expr>narrow(result).run(new HashSet<>());
-Set<String> variables = tuple.state();
+// Run the collection
+StateTuple<Set<String>, Expr> result =
+    collectVariablesRecursive(expr, collector).run(new HashSet<>());
+Set<String> variables = result.state();
 ```
 
 ---
