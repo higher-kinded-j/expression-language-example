@@ -9,11 +9,8 @@ import org.higherkindedj.article4.ast.Expr.Binary;
 import org.higherkindedj.article4.ast.Expr.Conditional;
 import org.higherkindedj.article4.ast.Expr.Literal;
 import org.higherkindedj.article4.ast.Expr.Variable;
-import org.higherkindedj.hkt.Kind;
+import org.higherkindedj.hkt.Semigroup;
 import org.higherkindedj.hkt.validated.Validated;
-import org.higherkindedj.hkt.validated.ValidatedKind;
-import org.higherkindedj.hkt.validated.ValidatedKindHelper;
-import org.higherkindedj.hkt.validated.ValidatedMonad;
 
 /**
  * Type checker for the expression language using Higher-Kinded-J's Validated for error
@@ -25,17 +22,13 @@ import org.higherkindedj.hkt.validated.ValidatedMonad;
  *
  * <p>Key insight: type checking sub-expressions is INDEPENDENT. The type of the left operand
  * doesn't affect whether we should check the right operand. This makes {@code Validated} (which is
- * Applicative) perfect for the job. Higher-Kinded-J's ValidatedMonad uses applicative semantics for
- * {@code ap} (accumulating errors) while {@code flatMap} is fail-fast.
+ * Applicative) perfect for the job. We use Validated's {@code ap} method with a Semigroup for error
+ * accumulation.
  */
 public final class ExprTypeChecker {
 
-  /** The ValidatedMonad instance configured with our error semigroup for accumulation. */
-  private static final ValidatedMonad<List<TypeError>> VALIDATED_MONAD =
-      ValidatedMonad.instance(TypeError.semigroup());
-
-  /** Helper for widening/narrowing Validated to/from Kind. */
-  private static final ValidatedKindHelper HELPER = ValidatedKindHelper.INSTANCE;
+  /** Semigroup for accumulating type errors. */
+  private static final Semigroup<List<TypeError>> ERROR_SEMIGROUP = TypeError.semigroup();
 
   private ExprTypeChecker() {}
 
@@ -81,18 +74,34 @@ public final class ExprTypeChecker {
     Validated<List<TypeError>, Type> leftType = typeCheck(left, env);
     Validated<List<TypeError>, Type> rightType = typeCheck(right, env);
 
-    // Use Higher-Kinded-J's Applicative.map2 to combine both validations
-    // This accumulates errors from BOTH sides before checking the operation
-    Kind<ValidatedKind.Witness<List<TypeError>>, Type> combined =
-        VALIDATED_MONAD.map2(
-            HELPER.widen(leftType),
-            HELPER.widen(rightType),
-            (lt, rt) -> checkBinaryTypes(op, lt, rt));
+    // Use Higher-Kinded-J's Validated.ap to combine both validations with error accumulation
+    // ap applies a function wrapped in Validated to a value wrapped in Validated
+    // The semigroup combines errors from both sides
+    Validated<List<TypeError>, java.util.function.Function<Type, Type>> partialCheck =
+        leftType.map(lt -> rt -> checkBinaryTypesResult(op, lt, rt));
 
-    // The result is Validated<Errors, Validated<Errors, Type>>
-    // We need to flatten it using flatMap
-    return HELPER.narrow(
-        VALIDATED_MONAD.flatMap(combined, inner -> HELPER.widen(inner)));
+    Validated<List<TypeError>, Type> combinedTypes = rightType.ap(partialCheck, ERROR_SEMIGROUP);
+
+    // Now check if the combined result itself has errors from the type check
+    return combinedTypes.flatMap(type -> {
+      if (type == null) {
+        // checkBinaryTypesResult returned null to signal an error was found
+        // We need to re-check to get the actual error
+        return leftType.flatMap(lt ->
+            rightType.flatMap(rt -> checkBinaryTypes(op, lt, rt)));
+      }
+      return Validated.valid(type);
+    });
+  }
+
+  // Returns null if types don't match (used for ap pattern), actual type otherwise
+  private static Type checkBinaryTypesResult(BinaryOp op, Type left, Type right) {
+    return switch (op) {
+      case ADD, SUB, MUL, DIV -> (left == Type.INT && right == Type.INT) ? Type.INT : null;
+      case AND, OR -> (left == Type.BOOL && right == Type.BOOL) ? Type.BOOL : null;
+      case EQ, NE -> (left == right) ? Type.BOOL : null;
+      case LT, LE, GT, GE -> (left == Type.INT && right == Type.INT) ? Type.BOOL : null;
+    };
   }
 
   private static Validated<List<TypeError>, Type> typeCheckConditional(
@@ -101,17 +110,12 @@ public final class ExprTypeChecker {
     Validated<List<TypeError>, Type> thenType = typeCheck(then_, env);
     Validated<List<TypeError>, Type> elseType = typeCheck(else_, env);
 
-    // Use Higher-Kinded-J's Applicative.map3 to combine all three validations
-    Kind<ValidatedKind.Witness<List<TypeError>>, Validated<List<TypeError>, Type>> combined =
-        VALIDATED_MONAD.map3(
-            HELPER.widen(condType),
-            HELPER.widen(thenType),
-            HELPER.widen(elseType),
-            ExprTypeChecker::checkConditionalTypes);
-
-    // Flatten the nested Validated
-    return HELPER.narrow(
-        VALIDATED_MONAD.flatMap(combined, inner -> HELPER.widen(inner)));
+    // Check condition first, then check branches
+    // Use flatMap for sequential checks after accumulating sub-expression errors
+    return condType.flatMap(ct ->
+        thenType.flatMap(tt ->
+            elseType.flatMap(et ->
+                checkConditionalTypes(ct, tt, et))));
   }
 
   private static Validated<List<TypeError>, Type> checkBinaryTypes(
@@ -178,21 +182,16 @@ public final class ExprTypeChecker {
 
     if (cond != Type.BOOL) {
       errors =
-          TypeError.semigroup()
-              .combine(
-                  errors, TypeError.single("Conditional requires BOOL condition, got " + cond));
+          ERROR_SEMIGROUP.combine(
+              errors, TypeError.single("Conditional requires BOOL condition, got " + cond));
     }
 
     if (then_ != else_) {
       errors =
-          TypeError.semigroup()
-              .combine(
-                  errors,
-                  TypeError.single(
-                      "Conditional branches must have same type, got "
-                          + then_
-                          + " and "
-                          + else_));
+          ERROR_SEMIGROUP.combine(
+              errors,
+              TypeError.single(
+                  "Conditional branches must have same type, got " + then_ + " and " + else_));
     }
 
     if (!errors.isEmpty()) {

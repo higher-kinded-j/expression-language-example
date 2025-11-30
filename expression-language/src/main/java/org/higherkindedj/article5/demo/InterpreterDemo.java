@@ -117,7 +117,7 @@ public final class InterpreterDemo {
     State<Environment, Object> computation = ExprInterpreter.interpret(expr);
     System.out.println("   State action created (computation deferred)");
 
-    Object result = computation.run(env)._1();
+    Object result = computation.run(env).value();
     System.out.println("   After run: " + result);
     System.out.println();
 
@@ -127,7 +127,7 @@ public final class InterpreterDemo {
     System.out.println("   with different environments:");
 
     Environment env2 = Environment.of("a", 10, "b", 20, "c", 30);
-    Object result2 = computation.run(env2)._1();
+    Object result2 = computation.run(env2).value();
     System.out.println("   With a=10, b=20, c=30: " + result2);
     System.out.println();
   }

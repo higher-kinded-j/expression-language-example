@@ -9,8 +9,6 @@ import org.higherkindedj.article4.ast.Expr.Conditional;
 import org.higherkindedj.article4.ast.Expr.Literal;
 import org.higherkindedj.article4.ast.Expr.Variable;
 import org.higherkindedj.hkt.state.State;
-import org.higherkindedj.hkt.state.StateKindHelper;
-import org.higherkindedj.hkt.state.StateMonad;
 import org.higherkindedj.hkt.state.StateTuple;
 
 /**
@@ -29,12 +27,6 @@ import org.higherkindedj.hkt.state.StateTuple;
  * makes State (which is a Monad) the right abstraction.
  */
 public final class ExprInterpreter {
-
-  /** The StateMonad instance for our Environment state type. */
-  private static final StateMonad<Environment> STATE_MONAD = new StateMonad<>();
-
-  /** Helper for widening/narrowing State to/from Kind. */
-  private static final StateKindHelper<Environment> HELPER = StateKindHelper.instance();
 
   private ExprInterpreter() {}
 
@@ -102,6 +94,6 @@ public final class ExprInterpreter {
    */
   public static Object eval(Expr expr, Environment env) {
     StateTuple<Environment, Object> result = interpret(expr).run(env);
-    return result._1();
+    return result.value();
   }
 }

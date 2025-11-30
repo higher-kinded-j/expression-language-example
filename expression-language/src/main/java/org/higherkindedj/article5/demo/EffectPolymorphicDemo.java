@@ -17,7 +17,6 @@ import org.higherkindedj.hkt.state.StateKind;
 import org.higherkindedj.hkt.state.StateKindHelper;
 import org.higherkindedj.hkt.state.StateMonad;
 import org.higherkindedj.hkt.state.StateTuple;
-import org.higherkindedj.hkt.tuple.Tuple2;
 import org.higherkindedj.optics.Traversal;
 import org.higherkindedj.optics.util.Traversals;
 
@@ -107,7 +106,7 @@ public final class EffectPolymorphicDemo {
     // Use a recursive approach to visit all nodes
     StateTuple<Set<String>, Expr> result =
         collectVariablesRecursive(expr, collector).run(new HashSet<>());
-    return result._2();
+    return result.state();
   }
 
   private static State<Set<String>, Expr> collectVariablesRecursive(
@@ -167,7 +166,6 @@ public final class EffectPolymorphicDemo {
 
     // State-based transformation using modifyF with Higher-Kinded-J State
     StateMonad<Integer> stateMonad = new StateMonad<>();
-    StateKindHelper<Integer> helper = StateKindHelper.instance();
 
     Kind<StateKind.Witness<Integer>, Expr> stateKind =
         children.modifyF(
@@ -176,19 +174,19 @@ public final class EffectPolymorphicDemo {
                 // Count and transform using Higher-Kinded-J State
                 State<Integer, Expr> countAndTransform =
                     State.<Integer>modify(count -> count + 1).map(v -> new Literal(i * 10));
-                return helper.widen(countAndTransform);
+                return StateKindHelper.STATE.widen(countAndTransform);
               }
-              return helper.widen(State.pure(e));
+              return StateKindHelper.STATE.widen(State.pure(e));
             },
             expr,
             stateMonad);
 
-    StateTuple<Integer, Expr> stateResult = helper.narrow(stateKind).run(0);
+    StateTuple<Integer, Expr> stateResult = StateKindHelper.STATE.<Integer, Expr>narrow(stateKind).run(0);
     System.out.println(
         "   With State (counting): "
-            + stateResult._1().format()
+            + stateResult.value().format()
             + ", count = "
-            + stateResult._2());
+            + stateResult.state());
     System.out.println();
 
     System.out.println("   Key insight: The SAME traversal (children()) works with both");
