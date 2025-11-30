@@ -2,9 +2,13 @@
 // Licensed under the MIT License. See LICENSE.md in the project root for license information.
 package org.higherkindedj.article5.demo;
 
+import static org.higherkindedj.hkt.state.StateKindHelper.STATE;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.higherkindedj.article4.ast.BinaryOp;
 import org.higherkindedj.article4.ast.Expr;
 import org.higherkindedj.article4.ast.Expr.Binary;
@@ -14,7 +18,6 @@ import org.higherkindedj.article4.traversal.ExprTraversal;
 import org.higherkindedj.hkt.Kind;
 import org.higherkindedj.hkt.state.State;
 import org.higherkindedj.hkt.state.StateKind;
-import org.higherkindedj.hkt.state.StateKindHelper;
 import org.higherkindedj.hkt.state.StateMonad;
 import org.higherkindedj.hkt.state.StateTuple;
 import org.higherkindedj.optics.Traversal;
@@ -55,13 +58,7 @@ public final class EffectPolymorphicDemo {
     // Double all literals using the children traversal + recursion
     Expr doubled =
         ExprTraversal.transformBottomUp(
-            expr,
-            e -> {
-              if (e instanceof Literal(Integer i)) {
-                return new Literal(i * 2);
-              }
-              return e;
-            });
+            expr, e -> e instanceof Literal(Integer i) ? new Literal(i * 2) : e);
 
     System.out.println("   After doubling literals: " + doubled.format());
     System.out.println();
@@ -90,18 +87,14 @@ public final class EffectPolymorphicDemo {
   private static Set<String> collectVariables(Expr expr) {
     // Define a collector that adds variable names to a Set
     Function<Expr, State<Set<String>, Expr>> collector =
-        e -> {
-          if (e instanceof Variable(var name)) {
-            return State.<Set<String>>modify(
-                    vars -> {
-                      Set<String> newVars = new HashSet<>(vars);
-                      newVars.add(name);
-                      return newVars;
-                    })
-                .map(v -> e);
-          }
-          return State.pure(e);
-        };
+        e ->
+            e instanceof Variable(var name)
+                ? State.<Set<String>>modify(
+                        vars ->
+                            Stream.concat(vars.stream(), Stream.of(name))
+                                .collect(Collectors.toUnmodifiableSet()))
+                    .map(v -> e)
+                : State.pure(e);
 
     // Use a recursive approach to visit all nodes
     StateTuple<Set<String>, Expr> result =
@@ -153,14 +146,7 @@ public final class EffectPolymorphicDemo {
     Traversal<Expr, Expr> children = ExprTraversal.children();
     Expr modified =
         Traversals.modify(
-            children,
-            e -> {
-              if (e instanceof Literal(Integer i)) {
-                return new Literal(i * 10);
-              }
-              return e;
-            },
-            expr);
+            children, e -> e instanceof Literal(Integer i) ? new Literal(i * 10) : e, expr);
     System.out.println("   With Identity (pure): " + modified.format());
 
     // State-based transformation using modifyF with Higher-Kinded-J State
@@ -173,20 +159,17 @@ public final class EffectPolymorphicDemo {
                 // Count and transform using Higher-Kinded-J State
                 State<Integer, Expr> countAndTransform =
                     State.<Integer>modify(count -> count + 1).map(v -> new Literal(i * 10));
-                return StateKindHelper.STATE.widen(countAndTransform);
+                return STATE.widen(countAndTransform);
               }
-              return StateKindHelper.STATE.widen(State.pure(e));
+              return STATE.widen(State.pure(e));
             },
             expr,
             stateMonad);
 
-    StateTuple<Integer, Expr> stateResult =
-        StateKindHelper.STATE.<Integer, Expr>narrow(stateKind).run(0);
-    System.out.println(
-        "   With State (counting): "
-            + stateResult.value().format()
-            + ", count = "
-            + stateResult.state());
+    StateTuple<Integer, Expr> stateResult = STATE.narrow(stateKind).run(0);
+    System.out.printf(
+        "   With State (counting): %s, count = %d%n",
+        stateResult.value().format(), stateResult.state());
     System.out.println();
 
     System.out.println("   Key insight: The SAME traversal (children()) works with both");
