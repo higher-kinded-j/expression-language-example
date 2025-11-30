@@ -116,18 +116,27 @@ public final class EffectPolymorphicDemo {
     State<Set<String>, Expr> thisNode = collector.apply(expr);
 
     // Then recursively collect from children
-    return thisNode.flatMap(e -> switch (e) {
-      case Literal _, Variable _ -> State.pure(e);
-      case Binary(var l, var op, var r) ->
-          collectVariablesRecursive(l, collector).flatMap(newL ->
-              collectVariablesRecursive(r, collector).map(newR ->
-                  new Binary(newL, op, newR)));
-      case Expr.Conditional(var c, var t, var el) ->
-          collectVariablesRecursive(c, collector).flatMap(newC ->
-              collectVariablesRecursive(t, collector).flatMap(newT ->
-                  collectVariablesRecursive(el, collector).map(newE ->
-                      new Expr.Conditional(newC, newT, newE))));
-    });
+    return thisNode.flatMap(
+        e ->
+            switch (e) {
+              case Literal _, Variable _ -> State.pure(e);
+              case Binary(var l, var op, var r) ->
+                  collectVariablesRecursive(l, collector)
+                      .flatMap(
+                          newL ->
+                              collectVariablesRecursive(r, collector)
+                                  .map(newR -> new Binary(newL, op, newR)));
+              case Expr.Conditional(var c, var t, var el) ->
+                  collectVariablesRecursive(c, collector)
+                      .flatMap(
+                          newC ->
+                              collectVariablesRecursive(t, collector)
+                                  .flatMap(
+                                      newT ->
+                                          collectVariablesRecursive(el, collector)
+                                              .map(
+                                                  newE -> new Expr.Conditional(newC, newT, newE))));
+            });
   }
 
   private static void demoSameTraversalDifferentEffects() {
@@ -171,7 +180,8 @@ public final class EffectPolymorphicDemo {
             expr,
             stateMonad);
 
-    StateTuple<Integer, Expr> stateResult = StateKindHelper.STATE.<Integer, Expr>narrow(stateKind).run(0);
+    StateTuple<Integer, Expr> stateResult =
+        StateKindHelper.STATE.<Integer, Expr>narrow(stateKind).run(0);
     System.out.println(
         "   With State (counting): "
             + stateResult.value().format()

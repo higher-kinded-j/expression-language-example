@@ -63,12 +63,7 @@ public final class Environment {
    * @return a new environment
    */
   public static Environment of(
-      String name1,
-      Object value1,
-      String name2,
-      Object value2,
-      String name3,
-      Object value3) {
+      String name1, Object value1, String name2, Object value2, String name3, Object value3) {
     return new Environment(Map.of(name1, value1, name2, value2, name3, value3));
   }
 

@@ -49,14 +49,12 @@ public final class ExprInterpreter {
 
   private static State<Environment, Object> interpretBinary(Expr left, BinaryOp op, Expr right) {
     return interpret(left)
-        .flatMap(
-            leftVal -> interpret(right).map(rightVal -> applyBinaryOp(op, leftVal, rightVal)));
+        .flatMap(leftVal -> interpret(right).map(rightVal -> applyBinaryOp(op, leftVal, rightVal)));
   }
 
   private static State<Environment, Object> interpretConditional(
       Expr cond, Expr then_, Expr else_) {
-    return interpret(cond)
-        .flatMap(condVal -> interpret((Boolean) condVal ? then_ : else_));
+    return interpret(cond).flatMap(condVal -> interpret((Boolean) condVal ? then_ : else_));
   }
 
   private static Object applyBinaryOp(BinaryOp op, Object left, Object right) {

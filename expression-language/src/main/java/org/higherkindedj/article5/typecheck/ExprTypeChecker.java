@@ -58,8 +58,10 @@ public final class ExprTypeChecker {
       case Integer _ -> Validated.valid(Type.INT);
       case Boolean _ -> Validated.valid(Type.BOOL);
       case String _ -> Validated.valid(Type.STRING);
-      default -> Validated.invalid(
-          TypeError.single("Unknown literal type: %s".formatted(value.getClass().getSimpleName())));
+      default ->
+          Validated.invalid(
+              TypeError.single(
+                  "Unknown literal type: %s".formatted(value.getClass().getSimpleName())));
     };
   }
 
@@ -77,15 +79,17 @@ public final class ExprTypeChecker {
     // Use Java 21+ pattern matching on Validated's Valid/Invalid subtypes
     // This accumulates errors from both sub-expressions before checking type compatibility
     return switch (leftResult) {
-      case Valid(var lt) -> switch (rightResult) {
-        case Valid(var rt) -> checkBinaryTypes(op, lt, rt);
-        case Invalid(var errors) -> Validated.invalid(errors);
-      };
-      case Invalid(var leftErrors) -> switch (rightResult) {
-        case Valid(_) -> Validated.invalid(leftErrors);
-        case Invalid(var rightErrors) ->
-            Validated.invalid(ERROR_SEMIGROUP.combine(leftErrors, rightErrors));
-      };
+      case Valid(var lt) ->
+          switch (rightResult) {
+            case Valid(var rt) -> checkBinaryTypes(op, lt, rt);
+            case Invalid(var errors) -> Validated.invalid(errors);
+          };
+      case Invalid(var leftErrors) ->
+          switch (rightResult) {
+            case Valid(_) -> Validated.invalid(leftErrors);
+            case Invalid(var rightErrors) ->
+                Validated.invalid(ERROR_SEMIGROUP.combine(leftErrors, rightErrors));
+          };
     };
   }
 
@@ -124,26 +128,34 @@ public final class ExprTypeChecker {
   private static Validated<List<TypeError>, Type> checkBinaryTypes(
       BinaryOp op, Type left, Type right) {
     return switch (op) {
-      case ADD, SUB, MUL, DIV -> (left == Type.INT && right == Type.INT)
-          ? Validated.valid(Type.INT)
-          : Validated.invalid(TypeError.single(
-              "Arithmetic operator '%s' requires INT operands, got %s and %s"
-                  .formatted(op.symbol(), left, right)));
-      case AND, OR -> (left == Type.BOOL && right == Type.BOOL)
-          ? Validated.valid(Type.BOOL)
-          : Validated.invalid(TypeError.single(
-              "Logical operator '%s' requires BOOL operands, got %s and %s"
-                  .formatted(op.symbol(), left, right)));
-      case EQ, NE -> (left == right)
-          ? Validated.valid(Type.BOOL)
-          : Validated.invalid(TypeError.single(
-              "Equality operator '%s' requires matching types, got %s and %s"
-                  .formatted(op.symbol(), left, right)));
-      case LT, LE, GT, GE -> (left == Type.INT && right == Type.INT)
-          ? Validated.valid(Type.BOOL)
-          : Validated.invalid(TypeError.single(
-              "Comparison operator '%s' requires INT operands, got %s and %s"
-                  .formatted(op.symbol(), left, right)));
+      case ADD, SUB, MUL, DIV ->
+          (left == Type.INT && right == Type.INT)
+              ? Validated.valid(Type.INT)
+              : Validated.invalid(
+                  TypeError.single(
+                      "Arithmetic operator '%s' requires INT operands, got %s and %s"
+                          .formatted(op.symbol(), left, right)));
+      case AND, OR ->
+          (left == Type.BOOL && right == Type.BOOL)
+              ? Validated.valid(Type.BOOL)
+              : Validated.invalid(
+                  TypeError.single(
+                      "Logical operator '%s' requires BOOL operands, got %s and %s"
+                          .formatted(op.symbol(), left, right)));
+      case EQ, NE ->
+          (left == right)
+              ? Validated.valid(Type.BOOL)
+              : Validated.invalid(
+                  TypeError.single(
+                      "Equality operator '%s' requires matching types, got %s and %s"
+                          .formatted(op.symbol(), left, right)));
+      case LT, LE, GT, GE ->
+          (left == Type.INT && right == Type.INT)
+              ? Validated.valid(Type.BOOL)
+              : Validated.invalid(
+                  TypeError.single(
+                      "Comparison operator '%s' requires INT operands, got %s and %s"
+                          .formatted(op.symbol(), left, right)));
     };
   }
 
@@ -152,16 +164,19 @@ public final class ExprTypeChecker {
     List<TypeError> errors = List.of();
 
     if (cond != Type.BOOL) {
-      errors = ERROR_SEMIGROUP.combine(
-          errors,
-          TypeError.single("Conditional requires BOOL condition, got %s".formatted(cond)));
+      errors =
+          ERROR_SEMIGROUP.combine(
+              errors,
+              TypeError.single("Conditional requires BOOL condition, got %s".formatted(cond)));
     }
 
     if (then_ != else_) {
-      errors = ERROR_SEMIGROUP.combine(
-          errors,
-          TypeError.single(
-              "Conditional branches must have same type, got %s and %s".formatted(then_, else_)));
+      errors =
+          ERROR_SEMIGROUP.combine(
+              errors,
+              TypeError.single(
+                  "Conditional branches must have same type, got %s and %s"
+                      .formatted(then_, else_)));
     }
 
     return errors.isEmpty() ? Validated.valid(then_) : Validated.invalid(errors);
