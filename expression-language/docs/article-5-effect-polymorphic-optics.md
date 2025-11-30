@@ -116,37 +116,56 @@ With just these two operations, we can sequence independent computations while a
 
 ### Example: Pure Transformation
 
-Using `Identity` (no effect), `modifyF` behaves like regular `modify`:
+For pure transformations, we can use the optics library's `Traversals.modify` utility, which handles the `Id` effect internally:
 
 ```java
+import org.higherkindedj.optics.Traversal;
+import org.higherkindedj.optics.util.Traversals;
+
 Traversal<Expr, Expr> children = ExprTraversal.children();
 
 // Pure transformation: double all literals
-Expr result = IdentityKind.unwrap(
-    children.modifyF(
-        expr -> IdentityKind.of(doubleLiterals(expr)),
-        expression,
-        IdentityKind.APPLICATIVE
-    )
-);
+Expr result = Traversals.modify(children, e -> {
+    if (e instanceof Literal(Integer i)) {
+        return new Literal(i * 2);
+    }
+    return e;
+}, expression);
 ```
 
-### Example: Fallible Transformation
+### Example: Stateful Transformation
 
-Using `Optional`, transformations can fail:
+Using Higher-Kinded-J's `State` monad, transformations can track state:
 
 ```java
-// Transformation that fails on division by zero
-Function<Expr, Kind<OptionalKind.Mu, Expr>> safeDivide = expr -> {
-    if (expr instanceof Binary(_, DIV, Literal(Integer i)) && i == 0) {
-        return OptionalKind.empty();
-    }
-    return OptionalKind.of(expr);
-};
+import org.higherkindedj.hkt.Kind;
+import org.higherkindedj.hkt.state.State;
+import org.higherkindedj.hkt.state.StateKind;
+import org.higherkindedj.hkt.state.StateKindHelper;
+import org.higherkindedj.hkt.state.StateMonad;
+import org.higherkindedj.hkt.state.StateTuple;
 
-Optional<Expr> result = OptionalKind.unwrap(
-    children.modifyF(safeDivide, expression, OptionalKind.APPLICATIVE)
+StateMonad<Integer> stateMonad = new StateMonad<>();
+
+// Count and transform literals
+Kind<StateKind.Witness<Integer>, Expr> stateKind = children.modifyF(
+    e -> {
+        if (e instanceof Literal(Integer i)) {
+            State<Integer, Expr> countAndTransform =
+                State.<Integer>modify(count -> count + 1)
+                     .map(v -> new Literal(i * 10));
+            return StateKindHelper.STATE.widen(countAndTransform);
+        }
+        return StateKindHelper.STATE.widen(State.pure(e));
+    },
+    expression,
+    stateMonad
 );
+
+StateTuple<Integer, Expr> result =
+    StateKindHelper.STATE.<Integer, Expr>narrow(stateKind).run(0);
+Expr transformed = result.value();
+int count = result.state();
 ```
 
 ---
@@ -188,82 +207,79 @@ public record TypeErrors(List<TypeError> errors) {
 }
 ```
 
-Now the type checker:
+Now the type checker. We use Java 21+ pattern matching on `Valid`/`Invalid` to accumulate errors:
 
 ```java
+import org.higherkindedj.hkt.Semigroup;
+import org.higherkindedj.hkt.validated.Invalid;
+import org.higherkindedj.hkt.validated.Valid;
+import org.higherkindedj.hkt.validated.Validated;
+
 public class ExprTypeChecker {
 
-    public static Validated<TypeErrors, Type> typeCheck(Expr expr, TypeEnv env) {
+    private static final Semigroup<List<TypeError>> ERROR_SEMIGROUP = TypeError.semigroup();
+
+    public static Validated<List<TypeError>, Type> typeCheck(Expr expr, TypeEnv env) {
         return switch (expr) {
-            case Literal(Integer _) -> Validated.valid(Type.INT);
-            case Literal(Boolean _) -> Validated.valid(Type.BOOL);
-            case Literal(String _) -> Validated.valid(Type.STRING);
-
-            case Variable(var name) ->
-                env.lookup(name)
-                    .map(Validated::<TypeErrors, Type>valid)
-                    .orElseGet(() -> Validated.invalid(
-                        TypeErrors.single("Undefined variable: " + name, expr.location())
-                    ));
-
-            case Binary(var left, var op, var right) -> {
-                Validated<TypeErrors, Type> leftType = typeCheck(left, env);
-                Validated<TypeErrors, Type> rightType = typeCheck(right, env);
-
-                // Combine both validations, accumulating errors
-                yield ValidatedKind.APPLICATIVE.map2(
-                    ValidatedKind.widen(leftType),
-                    ValidatedKind.widen(rightType),
-                    (lt, rt) -> checkBinaryTypes(op, lt, rt, expr.location())
-                ).flatMap(v -> v);  // Flatten nested Validated
-            }
-
-            case Conditional(var cond, var then_, var else_) -> {
-                Validated<TypeErrors, Type> condType = typeCheck(cond, env);
-                Validated<TypeErrors, Type> thenType = typeCheck(then_, env);
-                Validated<TypeErrors, Type> elseType = typeCheck(else_, env);
-
-                yield ValidatedKind.APPLICATIVE.map3(
-                    ValidatedKind.widen(condType),
-                    ValidatedKind.widen(thenType),
-                    ValidatedKind.widen(elseType),
-                    (ct, tt, et) -> checkConditionalTypes(ct, tt, et, expr.location())
-                ).flatMap(v -> v);
-            }
+            case Literal(var value) -> typeCheckLiteral(value);
+            case Variable(var name) -> typeCheckVariable(name, env);
+            case Binary(var left, var op, var right) -> typeCheckBinary(left, op, right, env);
+            case Conditional(var cond, var then_, var else_) ->
+                typeCheckConditional(cond, then_, else_, env);
         };
     }
 
-    private static Validated<TypeErrors, Type> checkBinaryTypes(
-            BinaryOp op, Type left, Type right, SourceLocation loc) {
+    private static Validated<List<TypeError>, Type> typeCheckLiteral(Object value) {
+        return switch (value) {
+            case Integer _ -> Validated.valid(Type.INT);
+            case Boolean _ -> Validated.valid(Type.BOOL);
+            case String _ -> Validated.valid(Type.STRING);
+            default -> Validated.invalid(TypeError.single("Unknown literal type"));
+        };
+    }
+
+    private static Validated<List<TypeError>, Type> typeCheckBinary(
+            Expr left, BinaryOp op, Expr right, TypeEnv env) {
+        Validated<List<TypeError>, Type> leftResult = typeCheck(left, env);
+        Validated<List<TypeError>, Type> rightResult = typeCheck(right, env);
+
+        // Use Java 21+ pattern matching on Valid/Invalid to accumulate errors
+        return switch (leftResult) {
+            case Valid(var lt) -> switch (rightResult) {
+                case Valid(var rt) -> checkBinaryTypes(op, lt, rt);
+                case Invalid(var errors) -> Validated.invalid(errors);
+            };
+            case Invalid(var leftErrors) -> switch (rightResult) {
+                case Valid(_) -> Validated.invalid(leftErrors);
+                case Invalid(var rightErrors) ->
+                    Validated.invalid(ERROR_SEMIGROUP.combine(leftErrors, rightErrors));
+            };
+        };
+    }
+
+    private static Validated<List<TypeError>, Type> checkBinaryTypes(
+            BinaryOp op, Type left, Type right) {
         return switch (op) {
-            case ADD, SUB, MUL, DIV -> {
-                if (left != Type.INT || right != Type.INT) {
-                    yield Validated.invalid(TypeErrors.single(
-                        "Arithmetic requires INT operands, got " + left + " and " + right, loc));
-                }
-                yield Validated.valid(Type.INT);
-            }
-            case AND, OR -> {
-                if (left != Type.BOOL || right != Type.BOOL) {
-                    yield Validated.invalid(TypeErrors.single(
-                        "Logical operators require BOOL operands, got " + left + " and " + right, loc));
-                }
-                yield Validated.valid(Type.BOOL);
-            }
-            case EQ, NE -> {
-                if (left != right) {
-                    yield Validated.invalid(TypeErrors.single(
-                        "Equality requires matching types, got " + left + " and " + right, loc));
-                }
-                yield Validated.valid(Type.BOOL);
-            }
-            case LT, LE, GT, GE -> {
-                if (left != Type.INT || right != Type.INT) {
-                    yield Validated.invalid(TypeErrors.single(
-                        "Comparison requires INT operands, got " + left + " and " + right, loc));
-                }
-                yield Validated.valid(Type.BOOL);
-            }
+            case ADD, SUB, MUL, DIV -> (left == Type.INT && right == Type.INT)
+                ? Validated.valid(Type.INT)
+                : Validated.invalid(TypeError.single(
+                    "Arithmetic operator '%s' requires INT operands, got %s and %s"
+                        .formatted(op.symbol(), left, right)));
+            case AND, OR -> (left == Type.BOOL && right == Type.BOOL)
+                ? Validated.valid(Type.BOOL)
+                : Validated.invalid(TypeError.single(
+                    "Logical operator '%s' requires BOOL operands, got %s and %s"
+                        .formatted(op.symbol(), left, right)));
+            case EQ, NE -> (left == right)
+                ? Validated.valid(Type.BOOL)
+                : Validated.invalid(TypeError.single(
+                    "Equality operator '%s' requires matching types, got %s and %s"
+                        .formatted(op.symbol(), left, right)));
+            case LT, LE, GT, GE -> (left == Type.INT && right == Type.INT)
+                ? Validated.valid(Type.BOOL)
+                : Validated.invalid(TypeError.single(
+                    "Comparison operator '%s' requires INT operands, got %s and %s"
+                        .formatted(op.symbol(), left, right)));
         };
     }
 }
@@ -480,27 +496,35 @@ We wrote the traversal once. Higher-Kinded-J's abstraction gives us all these be
 ### Example: Collecting Variables with State
 
 ```java
-// Use State to collect all variable names
-State<Set<String>, Expr> collectVars = expr -> {
+import org.higherkindedj.hkt.Kind;
+import org.higherkindedj.hkt.state.State;
+import org.higherkindedj.hkt.state.StateKind;
+import org.higherkindedj.hkt.state.StateKindHelper;
+import org.higherkindedj.hkt.state.StateMonad;
+import org.higherkindedj.hkt.state.StateTuple;
+
+// Define a collector function that records variable names in State
+Function<Expr, Kind<StateKind.Witness<Set<String>>, Expr>> collectVars = expr -> {
     if (expr instanceof Variable(var name)) {
-        return State.<Set<String>>modify(vars -> {
+        State<Set<String>, Expr> addVar = State.<Set<String>>modify(vars -> {
             var newVars = new HashSet<>(vars);
             newVars.add(name);
             return newVars;
-        }).map(_ -> expr);
+        }).map(v -> expr);
+        return StateKindHelper.STATE.widen(addVar);
     }
-    return State.of(expr);
+    return StateKindHelper.STATE.widen(State.pure(expr));
 };
 
 // Apply to all nodes using our traversal
-Kind<StateMu<Set<String>>, Expr> result =
-    ExprTraversal.children().modifyF(
-        collectVars,
-        expression,
-        StateKind.monad()
-    );
+StateMonad<Set<String>> stateMonad = new StateMonad<>();
+Kind<StateKind.Witness<Set<String>>, Expr> result =
+    ExprTraversal.children().modifyF(collectVars, expression, stateMonad);
 
-Set<String> variables = StateKind.eval(result, new HashSet<>());
+// Run the stateful computation starting with an empty set
+StateTuple<Set<String>, Expr> tuple =
+    StateKindHelper.STATE.<Set<String>, Expr>narrow(result).run(new HashSet<>());
+Set<String> variables = tuple.state();
 ```
 
 ---
