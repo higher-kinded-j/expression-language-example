@@ -192,17 +192,24 @@ First, define our type and error types:
 ```java
 public enum Type { INT, BOOL, STRING }
 
-public record TypeError(String message, SourceLocation location) {}
+/**
+ * A type error with a descriptive message.
+ */
+public record TypeError(String message) {
 
-public record TypeErrors(List<TypeError> errors) {
-    public static TypeErrors single(String message, SourceLocation loc) {
-        return new TypeErrors(List.of(new TypeError(message, loc)));
+    /**
+     * Get a Semigroup for combining lists of TypeErrors.
+     * Uses Higher-Kinded-J's built-in list semigroup.
+     */
+    public static Semigroup<List<TypeError>> semigroup() {
+        return Semigroups.list();
     }
 
-    public TypeErrors combine(TypeErrors other) {
-        return new TypeErrors(
-            Stream.concat(errors.stream(), other.errors.stream()).toList()
-        );
+    /**
+     * Create a single-element error list.
+     */
+    public static List<TypeError> single(String message) {
+        return List.of(new TypeError(message));
     }
 }
 ```
@@ -215,7 +222,7 @@ import org.higherkindedj.hkt.validated.Invalid;
 import org.higherkindedj.hkt.validated.Valid;
 import org.higherkindedj.hkt.validated.Validated;
 
-public class ExprTypeChecker {
+public final class ExprTypeChecker {
 
     private static final Semigroup<List<TypeError>> ERROR_SEMIGROUP = TypeError.semigroup();
 
@@ -234,8 +241,16 @@ public class ExprTypeChecker {
             case Integer _ -> Validated.valid(Type.INT);
             case Boolean _ -> Validated.valid(Type.BOOL);
             case String _ -> Validated.valid(Type.STRING);
-            default -> Validated.invalid(TypeError.single("Unknown literal type"));
+            default -> Validated.invalid(
+                TypeError.single("Unknown literal type: %s"
+                    .formatted(value.getClass().getSimpleName())));
         };
+    }
+
+    private static Validated<List<TypeError>, Type> typeCheckVariable(String name, TypeEnv env) {
+        return env.lookup(name)
+            .map(Validated::<List<TypeError>, Type>valid)
+            .orElseGet(() -> Validated.invalid(TypeError.single("Undefined variable: " + name)));
     }
 
     private static Validated<List<TypeError>, Type> typeCheckBinary(
@@ -255,6 +270,36 @@ public class ExprTypeChecker {
                     Validated.invalid(ERROR_SEMIGROUP.combine(leftErrors, rightErrors));
             };
         };
+    }
+
+    private static Validated<List<TypeError>, Type> typeCheckConditional(
+            Expr cond, Expr then_, Expr else_, TypeEnv env) {
+        Validated<List<TypeError>, Type> condResult = typeCheck(cond, env);
+        Validated<List<TypeError>, Type> thenResult = typeCheck(then_, env);
+        Validated<List<TypeError>, Type> elseResult = typeCheck(else_, env);
+
+        // Accumulate all sub-expression errors
+        List<TypeError> subExprErrors = collectErrors(condResult, thenResult, elseResult);
+        if (!subExprErrors.isEmpty()) {
+            return Validated.invalid(subExprErrors);
+        }
+
+        // All sub-expressions valid - extract types and check constraints
+        Type ct = ((Valid<List<TypeError>, Type>) condResult).value();
+        Type tt = ((Valid<List<TypeError>, Type>) thenResult).value();
+        Type et = ((Valid<List<TypeError>, Type>) elseResult).value();
+        return checkConditionalTypes(ct, tt, et);
+    }
+
+    @SafeVarargs
+    private static List<TypeError> collectErrors(Validated<List<TypeError>, Type>... results) {
+        List<TypeError> errors = List.of();
+        for (var result : results) {
+            if (result instanceof Invalid(var errs)) {
+                errors = ERROR_SEMIGROUP.combine(errors, errs);
+            }
+        }
+        return errors;
     }
 
     private static Validated<List<TypeError>, Type> checkBinaryTypes(
@@ -282,22 +327,41 @@ public class ExprTypeChecker {
                         .formatted(op.symbol(), left, right)));
         };
     }
+
+    private static Validated<List<TypeError>, Type> checkConditionalTypes(
+            Type cond, Type then_, Type else_) {
+        List<TypeError> errors = List.of();
+
+        if (cond != Type.BOOL) {
+            errors = ERROR_SEMIGROUP.combine(errors,
+                TypeError.single("Conditional requires BOOL condition, got %s".formatted(cond)));
+        }
+
+        if (then_ != else_) {
+            errors = ERROR_SEMIGROUP.combine(errors,
+                TypeError.single("Conditional branches must have same type, got %s and %s"
+                    .formatted(then_, else_)));
+        }
+
+        return errors.isEmpty() ? Validated.valid(then_) : Validated.invalid(errors);
+    }
 }
 ```
 
 ### Running the Type Checker
 
 ```java
-Expr expr = parse("(x + true) * (y && 42)");
-Validated<TypeErrors, Type> result = ExprTypeChecker.typeCheck(expr, emptyEnv);
+// Build an expression: (1 + true) - type error in left operand
+Expr expr = new Binary(new Literal(1), BinaryOp.ADD, new Literal(true));
+Validated<List<TypeError>, Type> result = ExprTypeChecker.typeCheck(expr, TypeEnv.empty());
 
 switch (result) {
     case Valid(var type) -> System.out.println("Type: " + type);
     case Invalid(var errors) -> {
         System.out.println("Type errors:");
-        errors.errors().forEach(e ->
-            System.out.println("  " + e.location() + ": " + e.message())
-        );
+        for (TypeError error : errors) {
+            System.out.println("  - " + error.message());
+        }
     }
 }
 ```
@@ -305,8 +369,7 @@ switch (result) {
 Output:
 ```
 Type errors:
-  1:5: Arithmetic requires INT operands, got INT and BOOL
-  1:14: Logical operators require BOOL operands, got BOOL and INT
+  - Arithmetic operator '+' requires INT operands, got INT and BOOL
 ```
 
 Both errors are reported in a single pass. This is the power of `Validated` with `Applicative`.
@@ -317,72 +380,54 @@ Both errors are reported in a single pass. This is the power of `Validated` with
 
 For interpretation, we need to thread an environment through the computation. The `State` monad captures this pattern.
 
-### The State Type
+### Higher-Kinded-J's State Type
+
+Higher-Kinded-J provides `State<S, A>` in `org.higherkindedj.hkt.state`:
 
 ```java
-public record State<S, A>(Function<S, Pair<A, S>> runState) {
+import org.higherkindedj.hkt.state.State;
+import org.higherkindedj.hkt.state.StateTuple;
 
-    public static <S, A> State<S, A> of(A value) {
-        return new State<>(s -> new Pair<>(value, s));
-    }
-
-    public static <S> State<S, S> get() {
-        return new State<>(s -> new Pair<>(s, s));
-    }
-
-    public static <S> State<S, Void> put(S newState) {
-        return new State<>(s -> new Pair<>(null, newState));
-    }
-
-    public static <S> State<S, Void> modify(Function<S, S> f) {
-        return new State<>(s -> new Pair<>(null, f.apply(s)));
-    }
-
-    public <B> State<S, B> flatMap(Function<A, State<S, B>> f) {
-        return new State<>(s -> {
-            Pair<A, S> result = runState.apply(s);
-            return f.apply(result.first()).runState().apply(result.second());
-        });
-    }
-
-    public <B> State<S, B> map(Function<A, B> f) {
-        return flatMap(a -> of(f.apply(a)));
-    }
-
-    public A eval(S initial) {
-        return runState.apply(initial).first();
-    }
-}
+// Key operations:
+State.pure(value)           // Wrap a value without changing state
+State.<S>get()              // Access the current state
+State.<S>modify(f)          // Transform the state
+state.flatMap(f)            // Chain dependent computations
+state.map(f)                // Transform the result
+state.run(initialState)     // Run and get StateTuple<S, A>
 ```
+
+The result of `run()` is a `StateTuple<S, A>` with `value()` for the result and `state()` for the final state.
 
 ### Building an Interpreter
 
 ```java
-public class ExprInterpreter {
+import org.higherkindedj.hkt.state.State;
+import org.higherkindedj.hkt.state.StateTuple;
+
+public final class ExprInterpreter {
 
     public static State<Environment, Object> interpret(Expr expr) {
         return switch (expr) {
-            case Literal(var value) -> State.of(value);
-
-            case Variable(var name) ->
-                State.<Environment>get().map(env -> env.lookup(name));
-
-            case Binary(var left, var op, var right) ->
-                interpret(left).flatMap(leftVal ->
-                    interpret(right).map(rightVal ->
-                        applyBinaryOp(op, leftVal, rightVal)
-                    )
-                );
-
+            case Literal(var value) -> State.pure(value);
+            case Variable(var name) -> State.<Environment>get().map(env -> env.lookup(name));
+            case Binary(var left, var op, var right) -> interpretBinary(left, op, right);
             case Conditional(var cond, var then_, var else_) ->
-                interpret(cond).flatMap(condVal -> {
-                    if ((Boolean) condVal) {
-                        return interpret(then_);
-                    } else {
-                        return interpret(else_);
-                    }
-                });
+                interpretConditional(cond, then_, else_);
         };
+    }
+
+    private static State<Environment, Object> interpretBinary(
+            Expr left, BinaryOp op, Expr right) {
+        return interpret(left)
+            .flatMap(leftVal -> interpret(right)
+                .map(rightVal -> applyBinaryOp(op, leftVal, rightVal)));
+    }
+
+    private static State<Environment, Object> interpretConditional(
+            Expr cond, Expr then_, Expr else_) {
+        return interpret(cond)
+            .flatMap(condVal -> interpret((Boolean) condVal ? then_ : else_));
     }
 
     private static Object applyBinaryOp(BinaryOp op, Object left, Object right) {
@@ -401,58 +446,49 @@ public class ExprInterpreter {
             case GE -> (Integer) left >= (Integer) right;
         };
     }
+
+    /** Convenience method to interpret directly with an environment. */
+    public static Object eval(Expr expr, Environment env) {
+        StateTuple<Environment, Object> result = interpret(expr).run(env);
+        return result.value();
+    }
 }
 ```
 
 ### Running the Interpreter
 
 ```java
-Expr expr = parse("(x + 1) * 2");
+// Build expression: (x + 1) * 2
+Expr expr = new Binary(
+    new Binary(new Variable("x"), BinaryOp.ADD, new Literal(1)),
+    BinaryOp.MUL,
+    new Literal(2)
+);
 Environment env = Environment.of("x", 10);
 
-Object result = ExprInterpreter.interpret(expr).eval(env);
+Object result = ExprInterpreter.eval(expr, env);
 // result = 22
+
+// Or using State directly:
+StateTuple<Environment, Object> tuple = ExprInterpreter.interpret(expr).run(env);
+Object value = tuple.value();      // 22
+Environment finalEnv = tuple.state();  // unchanged environment
 ```
 
 The environment is threaded implicitly through `flatMap`. We never pass it explicitly after the initial `eval` call.
 
 ---
 
-## Combining Effects
+## Combining Validated and State
 
-Real applications often need multiple effects. Type checking might need both error accumulation *and* access to a type environment. Higher-Kinded-J supports effect composition through monad transformers.
+Our type checker uses `Validated` for error accumulation, while our interpreter uses `State` for environment threading. Each effect serves a distinct purpose:
 
-### StateT: State with Another Effect
+- **Validated**: Independent sub-expression checks that accumulate all errors
+- **State**: Sequential interpretation where results flow through `flatMap`
 
-```java
-// StateT<S, F, A> = S -> F<(A, S)>
-// Combines State with any other effect F
+This separation is intentional. Type checking sub-expressions is *independent*—the type of the left operand doesn't determine whether we check the right. Interpretation is *sequential*—we must evaluate the condition before choosing a branch.
 
-public record StateT<S, F, A>(Function<S, Kind<F, Pair<A, S>>> runStateT) {
-
-    public static <S, F, A> StateT<S, F, A> lift(Kind<F, A> fa, Monad<F> monad) {
-        return new StateT<>(s -> monad.map(fa, a -> new Pair<>(a, s)));
-    }
-
-    public <B> StateT<S, F, B> flatMap(Function<A, StateT<S, F, B>> f, Monad<F> monad) {
-        return new StateT<>(s ->
-            monad.flatMap(runStateT.apply(s), pair ->
-                f.apply(pair.first()).runStateT().apply(pair.second())
-            )
-        );
-    }
-}
-```
-
-### Example: Type Checking with Environment Access
-
-```java
-// Combines Validated (for error accumulation) with Reader (for environment access)
-public static ValidatedT<TypeErrors, Reader<TypeEnv, ?>, Type>
-        typeCheckWithEnv(Expr expr) {
-    // Implementation uses both effects
-}
-```
+Higher-Kinded-J's design makes this distinction explicit through its type class hierarchy: `Validated` is an `Applicative` (for independent combination), while `State` is a `Monad` (for sequential dependency).
 
 ---
 
