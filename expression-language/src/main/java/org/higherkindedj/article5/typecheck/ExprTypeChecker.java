@@ -77,8 +77,12 @@ public final class ExprTypeChecker {
     // Use Higher-Kinded-J's Validated.ap to combine both validations with error accumulation
     // ap applies a function wrapped in Validated to a value wrapped in Validated
     // The semigroup combines errors from both sides
-    Validated<List<TypeError>, java.util.function.Function<Type, Type>> partialCheck =
-        leftType.map(lt -> rt -> checkBinaryTypesResult(op, lt, rt));
+    // Note: explicit cast needed for variance compatibility with ap's signature
+    Validated<List<TypeError>, java.util.function.Function<? super Type, ? extends Type>> partialCheck =
+        leftType.map(
+            lt ->
+                (java.util.function.Function<? super Type, ? extends Type>)
+                    (rt -> checkBinaryTypesResult(op, lt, rt)));
 
     Validated<List<TypeError>, Type> combinedTypes = rightType.ap(partialCheck, ERROR_SEMIGROUP);
 
