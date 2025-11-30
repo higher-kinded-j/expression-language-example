@@ -33,6 +33,9 @@ public final class ExprTypeChecker {
 
   private ExprTypeChecker() {}
 
+  /** A pair of types, used for applicative combination of sub-expression types. */
+  private record TypePair(Type left, Type right) {}
+
   /**
    * Type check an expression in the given type environment.
    *
@@ -73,35 +76,19 @@ public final class ExprTypeChecker {
     Validated<List<TypeError>, Type> leftType = typeCheck(left, env);
     Validated<List<TypeError>, Type> rightType = typeCheck(right, env);
 
-    // Use Higher-Kinded-J's Validated.ap to combine both validations with error accumulation
-    // ap applies a function wrapped in Validated to a value wrapped in Validated
-    // The semigroup combines errors from both sides
-    // Note: explicit cast needed for variance compatibility with ap's signature
-    Validated<List<TypeError>, Function<? super Type, ? extends Type>> partialCheck =
-        leftType.map(
-            lt -> (Function<? super Type, ? extends Type>) (rt -> checkBinaryTypesResult(op, lt, rt)));
+    // Use Higher-Kinded-J's Validated.ap to combine both validations with error accumulation.
+    // Strategy:
+    // 1. Use ap to combine leftType and rightType into a TypePair (accumulates sub-expression errors)
+    // 2. Then flatMap to check if the types are compatible for this operator
+    //
+    // This ensures we see ALL errors: both sub-expression errors AND type compatibility errors.
+    Validated<List<TypeError>, Function<? super Type, ? extends TypePair>> makePair =
+        leftType.map(lt -> (Function<? super Type, ? extends TypePair>) (rt -> new TypePair(lt, rt)));
 
-    Validated<List<TypeError>, Type> combinedTypes = rightType.ap(partialCheck, ERROR_SEMIGROUP);
+    Validated<List<TypeError>, TypePair> combined = rightType.ap(makePair, ERROR_SEMIGROUP);
 
-    // Now check if the combined result itself has errors from the type check
-    return combinedTypes.flatMap(type -> {
-      if (type == null) {
-        // checkBinaryTypesResult returned null to signal an error was found
-        // We need to re-check to get the actual error
-        return leftType.flatMap(lt -> rightType.flatMap(rt -> checkBinaryTypes(op, lt, rt)));
-      }
-      return Validated.valid(type);
-    });
-  }
-
-  // Returns null if types don't match (used for ap pattern), actual type otherwise
-  private static Type checkBinaryTypesResult(BinaryOp op, Type left, Type right) {
-    return switch (op) {
-      case ADD, SUB, MUL, DIV -> (left == Type.INT && right == Type.INT) ? Type.INT : null;
-      case AND, OR -> (left == Type.BOOL && right == Type.BOOL) ? Type.BOOL : null;
-      case EQ, NE -> (left == right) ? Type.BOOL : null;
-      case LT, LE, GT, GE -> (left == Type.INT && right == Type.INT) ? Type.BOOL : null;
-    };
+    // Now check type compatibility - this may produce additional errors
+    return combined.flatMap(pair -> checkBinaryTypes(op, pair.left(), pair.right()));
   }
 
   private static Validated<List<TypeError>, Type> typeCheckConditional(
@@ -110,10 +97,22 @@ public final class ExprTypeChecker {
     Validated<List<TypeError>, Type> thenType = typeCheck(then_, env);
     Validated<List<TypeError>, Type> elseType = typeCheck(else_, env);
 
-    // Check condition first, then check branches
-    // Use flatMap for sequential checks after accumulating sub-expression errors
-    return condType.flatMap(ct ->
-        thenType.flatMap(tt -> elseType.flatMap(et -> checkConditionalTypes(ct, tt, et))));
+    // Use ap to combine all three validations with error accumulation
+    // First combine cond and then into a pair
+    Validated<List<TypeError>, Function<? super Type, ? extends TypePair>> makeCondThenPair =
+        condType.map(ct -> (Function<? super Type, ? extends TypePair>) (tt -> new TypePair(ct, tt)));
+    Validated<List<TypeError>, TypePair> condThenPair = thenType.ap(makeCondThenPair, ERROR_SEMIGROUP);
+
+    // Then combine with else type into a triple (represented as nested record)
+    record TypeTriple(Type cond, Type then_, Type else_) {}
+
+    Validated<List<TypeError>, Function<? super Type, ? extends TypeTriple>> makeTriple =
+        condThenPair.map(
+            pair -> (Function<? super Type, ? extends TypeTriple>) (et -> new TypeTriple(pair.left(), pair.right(), et)));
+    Validated<List<TypeError>, TypeTriple> allTypes = elseType.ap(makeTriple, ERROR_SEMIGROUP);
+
+    // Now check all the conditional constraints
+    return allTypes.flatMap(triple -> checkConditionalTypes(triple.cond(), triple.then_(), triple.else_()));
   }
 
   private static Validated<List<TypeError>, Type> checkBinaryTypes(
