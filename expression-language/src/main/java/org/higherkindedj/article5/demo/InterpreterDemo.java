@@ -2,27 +2,28 @@
 // Licensed under the MIT License. See LICENSE.md in the project root for license information.
 package org.higherkindedj.article5.demo;
 
-import org.higherkindedj.article5.effect.State;
-import org.higherkindedj.article5.interpret.Environment;
-import org.higherkindedj.article5.interpret.ExprInterpreter;
 import org.higherkindedj.article4.ast.BinaryOp;
 import org.higherkindedj.article4.ast.Expr;
 import org.higherkindedj.article4.ast.Expr.Binary;
 import org.higherkindedj.article4.ast.Expr.Conditional;
 import org.higherkindedj.article4.ast.Expr.Literal;
 import org.higherkindedj.article4.ast.Expr.Variable;
+import org.higherkindedj.article5.interpret.Environment;
+import org.higherkindedj.article5.interpret.ExprInterpreter;
+import org.higherkindedj.hkt.state.State;
 
 /**
- * Demonstrates expression interpretation using the State monad.
+ * Demonstrates expression interpretation using Higher-Kinded-J's State monad.
  *
  * <p>Key concept: The State monad threads the environment through the computation implicitly. We
- * never pass the environment explicitly after the initial call to {@code eval}.
+ * never pass the environment explicitly after the initial call to {@code run}. This demo showcases
+ * the real Higher-Kinded-J State monad from {@code org.higherkindedj.hkt.state}.
  */
 public final class InterpreterDemo {
 
   public static void main(String[] args) {
-    System.out.println("Interpreter Demo: State Monad for Environment Threading");
-    System.out.println("========================================================");
+    System.out.println("Interpreter Demo: Higher-Kinded-J State Monad for Environment Threading");
+    System.out.println("=======================================================================");
     System.out.println();
 
     demoSimpleArithmetic();
@@ -94,8 +95,8 @@ public final class InterpreterDemo {
   }
 
   private static void demoStateMonadComposition() {
-    System.out.println("4. State monad composition");
-    System.out.println("   ------------------------");
+    System.out.println("4. Higher-Kinded-J State monad composition");
+    System.out.println("   ----------------------------------------");
     System.out.println("   The State monad threads state through flatMap.");
     System.out.println("   Here we compose multiple interpretations:");
     System.out.println();
@@ -116,17 +117,17 @@ public final class InterpreterDemo {
     State<Environment, Object> computation = ExprInterpreter.interpret(expr);
     System.out.println("   State action created (computation deferred)");
 
-    Object result = computation.eval(env);
-    System.out.println("   After eval: " + result);
+    Object result = computation.run(env)._1();
+    System.out.println("   After run: " + result);
     System.out.println();
 
     // Demonstrate that State is lazy
-    System.out.println("   Key insight: State is lazy. The computation only runs");
-    System.out.println("   when we call eval(). The same State action can be run");
+    System.out.println("   Key insight: Higher-Kinded-J's State is lazy. The computation");
+    System.out.println("   only runs when we call run(). The same State action can be run");
     System.out.println("   with different environments:");
 
     Environment env2 = Environment.of("a", 10, "b", 20, "c", 30);
-    Object result2 = computation.eval(env2);
+    Object result2 = computation.run(env2)._1();
     System.out.println("   With a=10, b=20, c=30: " + result2);
     System.out.println();
   }

@@ -3,12 +3,8 @@
 package org.higherkindedj.article5.demo;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import org.higherkindedj.article5.effect.Pair;
-import org.higherkindedj.article5.effect.State;
-import org.higherkindedj.article5.effect.StateKind;
 import org.higherkindedj.article4.ast.BinaryOp;
 import org.higherkindedj.article4.ast.Expr;
 import org.higherkindedj.article4.ast.Expr.Binary;
@@ -16,20 +12,27 @@ import org.higherkindedj.article4.ast.Expr.Literal;
 import org.higherkindedj.article4.ast.Expr.Variable;
 import org.higherkindedj.article4.traversal.ExprTraversal;
 import org.higherkindedj.hkt.Kind;
+import org.higherkindedj.hkt.state.State;
+import org.higherkindedj.hkt.state.StateKind;
+import org.higherkindedj.hkt.state.StateKindHelper;
+import org.higherkindedj.hkt.state.StateMonad;
+import org.higherkindedj.hkt.state.StateTuple;
+import org.higherkindedj.hkt.tuple.Tuple2;
 import org.higherkindedj.optics.Traversal;
 import org.higherkindedj.optics.util.Traversals;
 
 /**
- * Demonstrates effect-polymorphic optics using modifyF with different effects.
+ * Demonstrates effect-polymorphic optics using modifyF with different Higher-Kinded-J effects.
  *
  * <p>Key insight: The same traversal works with multiple computational effects. We write the
- * traversal once, then use it with Identity (pure), Optional (fallible), State (stateful), etc.
+ * traversal once, then use it with Identity (pure), State (stateful), Validated (error
+ * accumulating), etc. This demo showcases the real Higher-Kinded-J types.
  */
 public final class EffectPolymorphicDemo {
 
   public static void main(String[] args) {
-    System.out.println("Effect-Polymorphic Optics Demo");
-    System.out.println("==============================");
+    System.out.println("Effect-Polymorphic Optics Demo with Higher-Kinded-J");
+    System.out.println("====================================================");
     System.out.println();
 
     demoPureTransformation();
@@ -66,8 +69,8 @@ public final class EffectPolymorphicDemo {
   }
 
   private static void demoCollectWithState() {
-    System.out.println("2. Collecting variables with State");
-    System.out.println("   --------------------------------");
+    System.out.println("2. Collecting variables with Higher-Kinded-J State");
+    System.out.println("   -------------------------------------------------");
 
     // (a + b) * (c + d)
     Expr expr =
@@ -98,11 +101,13 @@ public final class EffectPolymorphicDemo {
                     })
                 .map(v -> e);
           }
-          return State.of(e);
+          return State.pure(e);
         };
 
     // Use a recursive approach to visit all nodes
-    return collectVariablesRecursive(expr, collector).exec(new HashSet<>());
+    StateTuple<Set<String>, Expr> result =
+        collectVariablesRecursive(expr, collector).run(new HashSet<>());
+    return result._2();
   }
 
   private static State<Set<String>, Expr> collectVariablesRecursive(
@@ -115,8 +120,8 @@ public final class EffectPolymorphicDemo {
     return thisNode.flatMap(
         e ->
             switch (e) {
-              case Literal _ -> State.of(e);
-              case Variable _ -> State.of(e);
+              case Literal _ -> State.pure(e);
+              case Variable _ -> State.pure(e);
               case Binary(var l, var op, var r) ->
                   collectVariablesRecursive(l, collector)
                       .flatMap(
@@ -137,8 +142,8 @@ public final class EffectPolymorphicDemo {
   }
 
   private static void demoSameTraversalDifferentEffects() {
-    System.out.println("3. Same traversal, different effects");
-    System.out.println("   ----------------------------------");
+    System.out.println("3. Same traversal, different Higher-Kinded-J effects");
+    System.out.println("   ---------------------------------------------------");
     System.out.println("   The children() traversal can work with ANY effect.");
     System.out.println("   Here we demonstrate with Identity and State:");
     System.out.println();
@@ -160,28 +165,35 @@ public final class EffectPolymorphicDemo {
             expr);
     System.out.println("   With Identity (pure): " + modified.format());
 
-    // State-based transformation using modifyF
-    Pair<Expr, Integer> stateResult =
-        children
-            .modifyF(
-                e -> {
-                  if (e instanceof Literal(Integer i)) {
-                    // Count and transform
-                    return StateKind.<Integer, Expr>widen(
-                        State.<Integer>modify(count -> count + 1).map(v -> new Literal(i * 10)));
-                  }
-                  return StateKind.widen(State.of(e));
-                },
-                expr,
-                StateKind.applicative())
-            .let(k -> StateKind.<Integer, Expr>narrow(k).run(0));
+    // State-based transformation using modifyF with Higher-Kinded-J State
+    StateMonad<Integer> stateMonad = new StateMonad<>();
+    StateKindHelper<Integer> helper = StateKindHelper.instance();
 
+    Kind<StateKind.Witness<Integer>, Expr> stateKind =
+        children.modifyF(
+            e -> {
+              if (e instanceof Literal(Integer i)) {
+                // Count and transform using Higher-Kinded-J State
+                State<Integer, Expr> countAndTransform =
+                    State.<Integer>modify(count -> count + 1).map(v -> new Literal(i * 10));
+                return helper.widen(countAndTransform);
+              }
+              return helper.widen(State.pure(e));
+            },
+            expr,
+            stateMonad);
+
+    StateTuple<Integer, Expr> stateResult = helper.narrow(stateKind).run(0);
     System.out.println(
-        "   With State (counting): " + stateResult.first().format() + ", count = " + stateResult.second());
+        "   With State (counting): "
+            + stateResult._1().format()
+            + ", count = "
+            + stateResult._2());
     System.out.println();
 
     System.out.println("   Key insight: The SAME traversal (children()) works with both");
-    System.out.println("   pure and effectful transformations. This is effect polymorphism.");
+    System.out.println("   pure and effectful transformations. This is effect polymorphism,");
+    System.out.println("   powered by Higher-Kinded-J's Kind<F, A> abstraction.");
     System.out.println();
   }
 }

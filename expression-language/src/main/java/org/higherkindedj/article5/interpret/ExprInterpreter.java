@@ -2,20 +2,27 @@
 // Licensed under the MIT License. See LICENSE.md in the project root for license information.
 package org.higherkindedj.article5.interpret;
 
-import org.higherkindedj.article5.effect.State;
 import org.higherkindedj.article4.ast.BinaryOp;
 import org.higherkindedj.article4.ast.Expr;
 import org.higherkindedj.article4.ast.Expr.Binary;
 import org.higherkindedj.article4.ast.Expr.Conditional;
 import org.higherkindedj.article4.ast.Expr.Literal;
 import org.higherkindedj.article4.ast.Expr.Variable;
+import org.higherkindedj.hkt.state.State;
+import org.higherkindedj.hkt.state.StateKindHelper;
+import org.higherkindedj.hkt.state.StateMonad;
+import org.higherkindedj.hkt.state.StateTuple;
 
 /**
- * Expression interpreter using the State monad for environment threading.
+ * Expression interpreter using Higher-Kinded-J's State monad for environment threading.
  *
  * <p>The State monad eliminates the need to pass the environment explicitly through every recursive
  * call. Instead, we use {@link State#get()} to access the environment and {@link State#flatMap} to
  * sequence operations.
+ *
+ * <p>This implementation uses Higher-Kinded-J's real State monad from {@code
+ * org.higherkindedj.hkt.state}, demonstrating the library's full capabilities for stateful
+ * computation.
  *
  * <p>Key insight: interpretation is SEQUENTIAL. The value of a variable depends on the current
  * environment, and we might modify the environment (in future extensions with let bindings). This
@@ -23,19 +30,25 @@ import org.higherkindedj.article4.ast.Expr.Variable;
  */
 public final class ExprInterpreter {
 
+  /** The StateMonad instance for our Environment state type. */
+  private static final StateMonad<Environment> STATE_MONAD = new StateMonad<>();
+
+  /** Helper for widening/narrowing State to/from Kind. */
+  private static final StateKindHelper<Environment> HELPER = StateKindHelper.instance();
+
   private ExprInterpreter() {}
 
   /**
    * Interpret an expression, returning a State action that computes the result.
    *
-   * <p>Call {@code eval(env)} on the result to run the interpretation with a starting environment.
+   * <p>Call {@code run(env)} on the result to run the interpretation with a starting environment.
    *
    * @param expr the expression to interpret
    * @return a State action computing the result
    */
   public static State<Environment, Object> interpret(Expr expr) {
     return switch (expr) {
-      case Literal(var value) -> State.of(value);
+      case Literal(var value) -> State.pure(value);
       case Variable(var name) -> State.<Environment>get().map(env -> env.lookup(name));
       case Binary(var left, var op, var right) -> interpretBinary(left, op, right);
       case Conditional(var cond, var then_, var else_) -> interpretConditional(cond, then_, else_);
@@ -81,11 +94,14 @@ public final class ExprInterpreter {
   /**
    * Convenience method to interpret an expression directly with an environment.
    *
+   * <p>Uses Higher-Kinded-J's State.run() to execute the stateful computation.
+   *
    * @param expr the expression to interpret
    * @param env the environment
    * @return the result value
    */
   public static Object eval(Expr expr, Environment env) {
-    return interpret(expr).eval(env);
+    StateTuple<Environment, Object> result = interpret(expr).run(env);
+    return result._1();
   }
 }

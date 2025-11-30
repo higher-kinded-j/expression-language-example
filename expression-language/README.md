@@ -1,19 +1,20 @@
-# Article 5: Effect-Polymorphic Optics
+# Article 5: Effect-Polymorphic Optics with Higher-Kinded-J
 
 **Branch**: `article-5-effect-polymorphic`
 
-This branch contains the companion code for Article 5 of the "Functional Optics for Modern Java" series. It builds on Article 4 by introducing effect-polymorphic operations: the same optics working with different computational contexts.
+This branch contains the companion code for Article 5 of the "Functional Optics for Modern Java" series. It builds on Article 4 by introducing effect-polymorphic operations using Higher-Kinded-J's real effect types: the same optics working with different computational contexts.
 
 ## What's New in This Branch
 
-Building on the foundation from Articles 1-4, this branch adds:
+Building on the foundation from Articles 1-4, this branch demonstrates:
 
-- **Effect polymorphism**: Abstract over computational context with `Kind<F, A>`
-- **Validated type**: Accumulate all errors instead of failing on the first
-- **State monad**: Thread context through computations implicitly
-- **Type checker**: Expression type checking with error accumulation
-- **Interpreter**: Expression evaluation with environment threading
-- **modifyF operations**: Bridge between optics and effects
+- **Effect polymorphism**: Abstract over computational context with Higher-Kinded-J's `Kind<F, A>`
+- **Validated type**: Use `org.higherkindedj.hkt.validated.Validated` to accumulate all errors
+- **State monad**: Use `org.higherkindedj.hkt.state.State` for implicit context threading
+- **Semigroup**: Use `org.higherkindedj.hkt.Semigroups.list()` for error accumulation
+- **Type checker**: Expression type checking using HKJ's `ValidatedMonad`
+- **Interpreter**: Expression evaluation using HKJ's `StateMonad`
+- **modifyF operations**: Bridge between optics and Higher-Kinded-J effects
 
 ## Running the Demos
 
@@ -23,15 +24,15 @@ gradle run
 
 This runs all Article 5 demonstrations:
 
-1. **TypeCheckerDemo**: Type checking with error accumulation
-2. **InterpreterDemo**: Expression evaluation with State monad
-3. **EffectPolymorphicDemo**: Same traversal, different effects
+1. **TypeCheckerDemo**: Type checking with error accumulation using HKJ Validated
+2. **InterpreterDemo**: Expression evaluation with HKJ State monad
+3. **EffectPolymorphicDemo**: Same traversal, different HKJ effects
 
-## Key Concepts Introduced
+## Key Concepts: Using Higher-Kinded-J
 
-### Effect Polymorphism
+### Effect Polymorphism with Kind<F, A>
 
-Write code once that works with many different effects:
+Higher-Kinded-J's `Kind<F, A>` enables writing code once that works with many different effects:
 
 ```java
 // The same traversal signature works with any effect F
@@ -42,55 +43,68 @@ Write code once that works with many different effects:
 );
 ```
 
-### The Validated Type
+### Higher-Kinded-J's Validated Type
 
-Accumulate errors instead of short-circuiting:
+From `org.higherkindedj.hkt.validated`:
 
 ```java
-public sealed interface Validated<E, A> {
-    record Valid<E, A>(A value) implements Validated<E, A> {}
-    record Invalid<E, A>(E errors) implements Validated<E, A> {}
-}
+// Create validations
+Validated<List<TypeError>, Type> success = Validated.valid(Type.INT);
+Validated<List<TypeError>, Type> failure = Validated.invalid(TypeError.single("error"));
 
-// Combine validations, collecting all errors
-Validated<TypeErrors, Type> result = ValidatedKind.APPLICATIVE.map2(
-    leftValidation,
-    rightValidation,
+// Get the ValidatedMonad with a Semigroup for error accumulation
+ValidatedMonad<List<TypeError>> monad = ValidatedMonad.instance(Semigroups.list());
+
+// Combine validations, collecting ALL errors using Applicative.map2
+Kind<ValidatedKind.Witness<List<TypeError>>, Type> result = monad.map2(
+    ValidatedKindHelper.INSTANCE.widen(leftValidation),
+    ValidatedKindHelper.INSTANCE.widen(rightValidation),
     (left, right) -> combineTypes(left, right)
 );
 ```
 
-### The State Monad
+### Higher-Kinded-J's State Monad
 
-Thread state through computations implicitly:
+From `org.higherkindedj.hkt.state`:
 
 ```java
-public record State<S, A>(Function<S, Pair<A, S>> runState) {
-    public static <S, A> State<S, A> of(A value);
-    public static <S> State<S, S> get();
-    public static <S> State<S, Void> put(S newState);
-    public <B> State<S, B> flatMap(Function<A, State<S, B>> f);
-}
+// Create state actions
+State<Environment, Object> pure = State.pure(value);
+State<Environment, Environment> getEnv = State.get();
+State<Environment, Unit> setEnv = State.set(newEnv);
+State<Environment, Unit> modifyEnv = State.modify(env -> env.bind("x", 42));
 
-// Interpret with environment threading
+// Compose with flatMap
 State<Environment, Object> interpret(Expr expr) {
     return switch (expr) {
         case Variable(var name) ->
             State.<Environment>get().map(env -> env.lookup(name));
+        case Binary(var left, var op, var right) ->
+            interpret(left).flatMap(l ->
+                interpret(right).map(r ->
+                    applyOp(op, l, r)));
         // ...
     };
 }
+
+// Run the computation
+StateTuple<Environment, Object> result = interpret(expr).run(initialEnv);
+Object value = result._1();
+Environment finalEnv = result._2();
 ```
 
 ### Effect Types and Their Behaviours
 
-| Effect Type | `Kind<F, A>` represents | Behaviour |
-|-------------|------------------------|-----------|
-| `Identity` | Just `A` | Pure computation |
-| `Optional` | `A` or nothing | Might fail |
-| `Either<E, ?>` | `A` or error `E` | Fail-fast errors |
-| `Validated<E, ?>` | `A` or accumulated errors | Error accumulation |
-| `State<S, ?>` | `A` with state `S` | Stateful computation |
+All from Higher-Kinded-J:
+
+| Effect Type | Package | Behaviour |
+|-------------|---------|-----------|
+| `Id` | `org.higherkindedj.hkt.id` | Pure computation |
+| `Maybe` | `org.higherkindedj.hkt.maybe` | Might fail |
+| `Either<E, ?>` | `org.higherkindedj.hkt.either` | Fail-fast errors |
+| `Validated<E, ?>` | `org.higherkindedj.hkt.validated` | Error accumulation |
+| `State<S, ?>` | `org.higherkindedj.hkt.state` | Stateful computation |
+| `IO` | `org.higherkindedj.hkt.io` | Side effects |
 
 ### Applicative vs Monad
 
@@ -99,7 +113,7 @@ State<Environment, Object> interpret(Expr expr) {
 | Applicative | `map2(fa, fb, combine)` | Independent computations |
 | Monad | `flatMap(fa, f)` | Dependent computations |
 
-`Validated` is Applicative but not Monad: this enables error accumulation.
+Higher-Kinded-J's `Validated` uses Applicative semantics for `ap` (error accumulation) and Monad semantics for `flatMap` (fail-fast). This intentional deviation from monad laws enables error accumulation in applicative contexts.
 
 ## Code Structure
 
@@ -108,28 +122,24 @@ src/main/java/org/higherkindedj/
 ├── article1-4/                  # From previous articles
 │
 └── article5/                    # NEW: Article 5 code
-    ├── effect/                  # Effect type definitions
-    │   ├── Validated.java       # Error-accumulating validation
-    │   ├── ValidatedKind.java   # Higher-kinded encoding
-    │   ├── State.java           # State monad
-    │   └── StateKind.java       # Higher-kinded encoding
-    │
-    ├── typecheck/               # Type checking infrastructure
-    │   ├── Type.java            # Expression types
-    │   ├── TypeError.java       # Type error representation
+    ├── typecheck/               # Type checking using HKJ Validated
+    │   ├── Type.java            # Expression types (INT, BOOL, STRING)
+    │   ├── TypeError.java       # Errors with Semigroups.list()
     │   ├── TypeEnv.java         # Type environment
-    │   └── ExprTypeChecker.java # The type checker
+    │   └── ExprTypeChecker.java # Uses ValidatedMonad for accumulation
     │
-    ├── interpret/               # Interpretation infrastructure
+    ├── interpret/               # Interpretation using HKJ State
     │   ├── Environment.java     # Variable bindings
-    │   └── ExprInterpreter.java # The interpreter
+    │   └── ExprInterpreter.java # Uses State monad for threading
     │
     └── demo/                    # Runnable demonstrations
         ├── Article5Demo.java    # Main entry point
-        ├── TypeCheckerDemo.java # Type checking examples
-        ├── InterpreterDemo.java # Interpretation examples
-        └── EffectPolymorphicDemo.java  # Effect polymorphism examples
+        ├── TypeCheckerDemo.java # Validated examples
+        ├── InterpreterDemo.java # State examples
+        └── EffectPolymorphicDemo.java  # modifyF with HKJ effects
 ```
+
+Note: This article uses Higher-Kinded-J's real effect types directly. There is no separate `effect/` package because we leverage the library's production-ready implementations.
 
 ## Building
 

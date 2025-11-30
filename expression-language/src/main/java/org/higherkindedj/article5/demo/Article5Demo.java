@@ -5,38 +5,40 @@ package org.higherkindedj.article5.demo;
 /**
  * Main entry point for Article 5 demonstrations.
  *
- * <p>Runs all demos showing effect-polymorphic optics:
+ * <p>Runs all demos showing effect-polymorphic optics using Higher-Kinded-J's real effect types:
  *
  * <ul>
- *   <li>TypeCheckerDemo: Type checking with error accumulation using Validated
- *   <li>InterpreterDemo: Expression evaluation with State monad
- *   <li>EffectPolymorphicDemo: Same traversal with different effects
+ *   <li>TypeCheckerDemo: Type checking with error accumulation using HKJ's Validated
+ *   <li>InterpreterDemo: Expression evaluation with HKJ's State monad
+ *   <li>EffectPolymorphicDemo: Same traversal with different HKJ effects
  * </ul>
+ *
+ * <p>This demonstrates the full power of Higher-Kinded-J for effect polymorphism in Java.
  */
 public final class Article5Demo {
 
   public static void main(String[] args) {
     System.out.println("╔══════════════════════════════════════════════════════════════════╗");
-    System.out.println("║           Article 5: Effect-Polymorphic Optics                   ║");
-    System.out.println("║           Functional Optics for Modern Java                      ║");
+    System.out.println("║     Article 5: Effect-Polymorphic Optics with Higher-Kinded-J    ║");
+    System.out.println("║                 Functional Optics for Modern Java                ║");
     System.out.println("╚══════════════════════════════════════════════════════════════════╝");
     System.out.println();
 
-    // Run Type Checker demo
+    // Run Type Checker demo using Higher-Kinded-J's Validated
     TypeCheckerDemo.main(args);
 
     System.out.println();
     System.out.println("────────────────────────────────────────────────────────────────────");
     System.out.println();
 
-    // Run Interpreter demo
+    // Run Interpreter demo using Higher-Kinded-J's State
     InterpreterDemo.main(args);
 
     System.out.println();
     System.out.println("────────────────────────────────────────────────────────────────────");
     System.out.println();
 
-    // Run Effect Polymorphic demo
+    // Run Effect Polymorphic demo with Higher-Kinded-J's Kind<F, A>
     EffectPolymorphicDemo.main(args);
 
     System.out.println();

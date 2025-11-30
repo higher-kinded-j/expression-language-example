@@ -2,30 +2,33 @@
 // Licensed under the MIT License. See LICENSE.md in the project root for license information.
 package org.higherkindedj.article5.demo;
 
-import org.higherkindedj.article5.effect.Validated;
-import org.higherkindedj.article5.typecheck.ExprTypeChecker;
-import org.higherkindedj.article5.typecheck.Type;
-import org.higherkindedj.article5.typecheck.TypeEnv;
-import org.higherkindedj.article5.typecheck.TypeError;
-import org.higherkindedj.article5.typecheck.TypeErrors;
+import java.util.List;
 import org.higherkindedj.article4.ast.BinaryOp;
 import org.higherkindedj.article4.ast.Expr;
 import org.higherkindedj.article4.ast.Expr.Binary;
 import org.higherkindedj.article4.ast.Expr.Conditional;
 import org.higherkindedj.article4.ast.Expr.Literal;
 import org.higherkindedj.article4.ast.Expr.Variable;
+import org.higherkindedj.article5.typecheck.ExprTypeChecker;
+import org.higherkindedj.article5.typecheck.Type;
+import org.higherkindedj.article5.typecheck.TypeEnv;
+import org.higherkindedj.article5.typecheck.TypeError;
+import org.higherkindedj.hkt.validated.Invalid;
+import org.higherkindedj.hkt.validated.Valid;
+import org.higherkindedj.hkt.validated.Validated;
 
 /**
- * Demonstrates type checking with error accumulation using Validated.
+ * Demonstrates type checking with error accumulation using Higher-Kinded-J's Validated.
  *
  * <p>Key concept: Validated collects ALL type errors in a single pass, rather than failing on the
- * first error. This provides a better developer experience.
+ * first error. This provides a better developer experience. This demo showcases the real
+ * Higher-Kinded-J Validated type from {@code org.higherkindedj.hkt.validated}.
  */
 public final class TypeCheckerDemo {
 
   public static void main(String[] args) {
-    System.out.println("Type Checker Demo: Error Accumulation with Validated");
-    System.out.println("====================================================");
+    System.out.println("Type Checker Demo: Error Accumulation with Higher-Kinded-J Validated");
+    System.out.println("====================================================================");
     System.out.println();
 
     demoWellTypedExpression();
@@ -51,7 +54,7 @@ public final class TypeCheckerDemo {
     System.out.println("   Expression: " + expr.format());
     System.out.println("   Environment: x: INT");
 
-    Validated<TypeErrors, Type> result = ExprTypeChecker.typeCheck(expr, env);
+    Validated<List<TypeError>, Type> result = ExprTypeChecker.typeCheck(expr, env);
     printResult(result);
     System.out.println();
   }
@@ -65,7 +68,7 @@ public final class TypeCheckerDemo {
 
     System.out.println("   Expression: " + expr.format());
 
-    Validated<TypeErrors, Type> result = ExprTypeChecker.typeCheck(expr, TypeEnv.empty());
+    Validated<List<TypeError>, Type> result = ExprTypeChecker.typeCheck(expr, TypeEnv.empty());
     printResult(result);
     System.out.println();
   }
@@ -82,9 +85,9 @@ public final class TypeCheckerDemo {
 
     System.out.println("   Expression: " + expr.format());
     System.out.println("   This expression has TWO type errors.");
-    System.out.println("   With Validated, we see BOTH errors in one pass:");
+    System.out.println("   With Higher-Kinded-J's Validated, we see BOTH errors in one pass:");
 
-    Validated<TypeErrors, Type> result = ExprTypeChecker.typeCheck(expr, TypeEnv.empty());
+    Validated<List<TypeError>, Type> result = ExprTypeChecker.typeCheck(expr, TypeEnv.empty());
     printResult(result);
     System.out.println();
   }
@@ -100,7 +103,7 @@ public final class TypeCheckerDemo {
     System.out.println("   Environment: (empty)");
     System.out.println("   Both variables are undefined; we see both errors:");
 
-    Validated<TypeErrors, Type> result = ExprTypeChecker.typeCheck(expr, TypeEnv.empty());
+    Validated<List<TypeError>, Type> result = ExprTypeChecker.typeCheck(expr, TypeEnv.empty());
     printResult(result);
     System.out.println();
   }
@@ -116,17 +119,17 @@ public final class TypeCheckerDemo {
     System.out.println("   Expression: " + expr.format());
     System.out.println("   Multiple errors in conditional:");
 
-    Validated<TypeErrors, Type> result = ExprTypeChecker.typeCheck(expr, TypeEnv.empty());
+    Validated<List<TypeError>, Type> result = ExprTypeChecker.typeCheck(expr, TypeEnv.empty());
     printResult(result);
     System.out.println();
   }
 
-  private static void printResult(Validated<TypeErrors, Type> result) {
+  private static void printResult(Validated<List<TypeError>, Type> result) {
     switch (result) {
-      case Validated.Valid(var type) -> System.out.println("   Result: Valid, type = " + type);
-      case Validated.Invalid(var errors) -> {
+      case Valid(var type) -> System.out.println("   Result: Valid, type = " + type);
+      case Invalid(var errors) -> {
         System.out.println("   Result: Invalid, " + errors.size() + " error(s):");
-        for (TypeError error : errors.errors()) {
+        for (TypeError error : errors) {
           System.out.println("     - " + error.message());
         }
       }
