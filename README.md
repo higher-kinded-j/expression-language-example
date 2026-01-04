@@ -1,5 +1,5 @@
 # Optics Blog Series
-# Part 1
+# Article 1
 ```bash
 ./gradlew :run -PmainClass=org.higherkindedj.article1.problem.NestedUpdateProblem
 ```
