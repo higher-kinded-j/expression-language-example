@@ -400,7 +400,7 @@ Traversal<List<Employee>, Employee> newcastleStaff =
 
 // Give Newcastle employees a 10% raise
 Traversal<List<Employee>, BigDecimal> newcastleSalaries =
-    newcastleEmployees.andThen(EmployeeLenses.salary().asTraversal());
+    newcastleStaff.andThen(EmployeeLenses.salary().asTraversal());
 
 List<Employee> afterRaise =
     Traversals.modify(
