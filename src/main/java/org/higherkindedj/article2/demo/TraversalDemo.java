@@ -3,6 +3,7 @@
 package org.higherkindedj.article2.demo;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -28,7 +29,7 @@ import org.higherkindedj.optics.util.Traversals;
  *   <li>Aggregation operations
  * </ul>
  *
- * @see <a href="../../docs/article-2-optics-fundamentals.md">Article 2: Optics Fundamentals</a>
+ * @see <a href=".https://github.com/higher-kinded-j/expression-language-example/blob/main/blog/article-2-optics-fundamentals.md">Article 2: Optics Fundamentals</a>
  */
 public final class TraversalDemo {
 
@@ -210,12 +211,14 @@ public final class TraversalDemo {
             .andThen(AddressLenses.city().asTraversal());
 
     Set<String> uniqueCities =
-        Traversals.getAll(allCities, employees).stream().collect(Collectors.toSet());
+        new HashSet<>(Traversals.getAll(allCities, employees));
     System.out.println("Unique cities: " + uniqueCities);
 
     // Average salary
     BigDecimal avgSalary =
-        totalSalary.divide(BigDecimal.valueOf(count), 2, java.math.RoundingMode.HALF_UP);
+        count == 0
+            ? BigDecimal.ZERO
+            : totalSalary.divide(BigDecimal.valueOf(count), 2, java.math.RoundingMode.HALF_UP);
     System.out.println("Average salary: £" + avgSalary);
     System.out.println();
   }

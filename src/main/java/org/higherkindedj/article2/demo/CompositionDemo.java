@@ -20,7 +20,7 @@ import org.higherkindedj.optics.util.Traversals;
  * <p>This demo shows the e-commerce example: applying a discount to all items across all orders for
  * a customer.
  *
- * @see <a href="../../docs/article-2-optics-fundamentals.md">Article 2: Optics Fundamentals</a>
+ * @see <a href="https://github.com/higher-kinded-j/expression-language-example/blob/main/blog/article-2-optics-fundamentals.md">Article 2: Optics Fundamentals</a>
  */
 public final class CompositionDemo {
 

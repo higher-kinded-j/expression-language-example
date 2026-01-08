@@ -32,6 +32,11 @@ public sealed interface Shape permits Shape.Circle, Shape.Rectangle, Shape.Trian
       case Circle(var r) -> Math.PI * r * r;
       case Rectangle(var w, var h) -> w * h;
       case Triangle(var a, var b, var c) -> {
+        // Per the triangle inequality theorem, the sum of the lengths of any two sides
+        // of a triangle must be greater than the length of the third side.
+        if (a + b <= c || a + c <= b || b + c <= a) {
+          yield 0.0; // Or throw an IllegalArgumentException for invalid triangles
+        }
         // Heron's formula
         double s = (a + b + c) / 2;
         yield Math.sqrt(s * (s - a) * (s - b) * (s - c));

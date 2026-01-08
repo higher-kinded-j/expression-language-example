@@ -9,7 +9,7 @@ package org.higherkindedj.article2.demo;
  * Higher-Kinded-J's {@code @GenerateLenses} and {@code @GeneratePrisms} annotations will generate
  * all the optics automatically.
  *
- * @see <a href="../../docs/article-2-optics-fundamentals.md">Article 2: Optics Fundamentals</a>
+ * @see <a href="https://github.com/higher-kinded-j/expression-language-example/blob/main/blog/article-2-optics-fundamentals.md">Article 2: Optics Fundamentals</a>
  */
 public final class ExpressionPreviewDemo {
 
