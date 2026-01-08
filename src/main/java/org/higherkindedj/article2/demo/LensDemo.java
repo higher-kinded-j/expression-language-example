@@ -20,7 +20,7 @@ import org.higherkindedj.optics.Lens;
  *   <li>The lens laws in action
  * </ul>
  *
- * @see <a href="../../docs/article-2-optics-fundamentals.md">Article 2: Optics Fundamentals</a>
+ * @see <a href="https://github.com/higher-kinded-j/expression-language-example/blob/main/blog/article-2-optics-fundamentals.md">Article 2: Optics Fundamentals</a>
  */
 public final class LensDemo {
 

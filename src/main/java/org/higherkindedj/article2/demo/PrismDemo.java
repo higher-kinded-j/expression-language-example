@@ -24,7 +24,7 @@ import org.higherkindedj.optics.Prism;
  *   <li>Type-safe downcasting pattern
  * </ul>
  *
- * @see <a href="../../docs/article-2-optics-fundamentals.md">Article 2: Optics Fundamentals</a>
+ * @see <a href=".https://github.com/higher-kinded-j/expression-language-example/blob/main/blog/article-2-optics-fundamentals.md">Article 2: Optics Fundamentals</a>
  */
 public final class PrismDemo {
 

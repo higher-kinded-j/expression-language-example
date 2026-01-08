@@ -11,7 +11,7 @@ Now it's time to get practical. This article dives deep into the three core opti
 ## Setting Up Higher-Kinded-J
 
 Before we explore optics in depth, let's configure our project to use Higher-Kinded-J's annotation-driven generation.  
-You will want to grab latest Java 25 and if you are using Gradle 9.2.1+.
+To follow along you will need Java 25 and if you are using Gradle 9.2.1 or newer.
 
 ### Gradle Configuration
 
@@ -113,7 +113,7 @@ import org.higherkindedj.optics.annotations.GenerateLenses;
 public record Address(String street, String city, String postcode) {}
 
 @GenerateLenses
-public record Employee(String id, String name, Address address) {}
+public record Employee(String id, String name, Address address, BigDecimal salary) {}
 
 @GenerateLenses
 public record Department(String name, Employee manager, List<Employee> staff) {}
@@ -398,12 +398,13 @@ Traversal<List<Employee>, Employee> newcastleStaff =
     Traversals.<Employee>forList()
         .filtered(e -> e.address().city().equals("Newcastle"));
 
-// Give Newcastle staff a pay rise
-List<Employee> updated = Traversals.modify(
-    newcastleStaff,
-    e -> new Employee(e.id(), e.name(), e.address(), e.salary().multiply(new BigDecimal("1.1"))),
-    employees
-);
+// Give Newcastle employees a 10% raise
+Traversal<List<Employee>, BigDecimal> newcastleSalaries =
+    newcastleEmployees.andThen(EmployeeLenses.salary().asTraversal());
+
+List<Employee> afterRaise =
+    Traversals.modify(
+        newcastleSalaries, sal -> sal.multiply(new BigDecimal("1.10")), employees);
 ```
 
 Filters compose naturally with other optics, enabling precise targeting deep within structures.

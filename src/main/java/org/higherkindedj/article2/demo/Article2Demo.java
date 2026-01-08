@@ -8,9 +8,9 @@ package org.higherkindedj.article2.demo;
  * <p>These demos accompany Article 2: Optics Fundamentals, demonstrating lenses, prisms, and
  * traversals using Higher-Kinded-J's annotation-driven code generation.
  *
- * <p>Run with: {@code ./gradlew :blog:run}
+ * <p>Run with: {@code ./gradlew :run -PmainClass=org.higherkindedj.article1.problem.NestedUpdateProblem}
  *
- * @see <a href="../../docs/article-2-optics-fundamentals.md">Article 2: Optics Fundamentals</a>
+ * @see <a href="https://github.com/higher-kinded-j/expression-language-example/blob/main/blog/article-2-optics-fundamentals.md">Article 2: Optics Fundamentals</a>
  */
 public final class Article2Demo {
 
