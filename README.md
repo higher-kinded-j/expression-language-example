@@ -32,6 +32,17 @@
 ./gradlew :run -PmainClass=org.higherkindedj.article2.demo.ExpressionPreviewDemo
 ```
 
+## [Article 3](article-3-ast-basic-optics.md)
+- **[ExprDemo](../src/main/java/org/higherkindedj/article3/demo/ExprDemo.java)**: Expression AST and Focus DSL
+```bash
+./gradlew :run -PmainClass=org.higherkindedj.article3.demo.ExprDemo
+```
+- **[OptimiserDemo](../src/main/java/org/higherkindedj/article3/demo/OptimiserDemo.java)**: Demonstrates expression optimisation
+```bash
+./gradlew :run -PmainClass=org.higherkindedj.article3.demo.OptimiserDemo
+```
+
+
 
 
 
