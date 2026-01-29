@@ -114,7 +114,7 @@ public final class ExprTraversal {
    */
   public static Expr transformBottomUp(Expr expr, Function<Expr, Expr> f) {
     // First transform all children
-    Expr transformed = Traversals.modify(children(), f.compose(e -> transformBottomUp(e, f)), expr);
+    Expr transformed = Traversals.modify(children(), child -> transformBottomUp(child, f), expr);
     // Then transform this node
     return f.apply(transformed);
   }

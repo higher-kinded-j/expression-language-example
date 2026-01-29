@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Fold utilities for collecting information from expression trees.
@@ -152,13 +153,9 @@ public final class ExprFold {
     Map<Expr, Integer> counts = new HashMap<>();
     countSubexpressions(expr, counts);
     // Filter to only repeated subexpressions
-    Map<Expr, Integer> result = new HashMap<>();
-    for (Map.Entry<Expr, Integer> entry : counts.entrySet()) {
-      if (entry.getValue() > 1) {
-        result.put(entry.getKey(), entry.getValue());
-      }
-    }
-    return result;
+    return counts.entrySet().stream()
+        .filter(e -> e.getValue() > 1)
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   private static void countSubexpressions(Expr expr, Map<Expr, Integer> counts) {
