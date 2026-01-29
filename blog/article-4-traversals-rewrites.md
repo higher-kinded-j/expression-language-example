@@ -203,9 +203,9 @@ Bottom-up (leaves → root):              Top-down (root → leaves):
 
         Binary(*)  ⑦                            Binary(*)  ①
        /         \                             /         \
-   Binary(+) ④   Binary(+) ⑥              Binary(+) ②   Binary(+) ⑤
+   Binary(+) ⑤  Binary(+) ⑥              Binary(+) ②   Binary(+) ⑤
    /       \     /        \               /       \     /        \
- x ①    1 ②    y ③     2 ⑤             x ③    1 ④    y ⑥     2 ⑦
+ x ①    1 ②    y ③     2 ④             x ③    1 ④    y ⑥     2 ⑦
 ```
 
 For constant folding, bottom-up is essential: we need to evaluate `1 + 2` at the leaves before we can recognise that the parent is now `3 * 5`.
