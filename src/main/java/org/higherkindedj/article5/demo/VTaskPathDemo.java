@@ -27,7 +27,7 @@ import java.util.List;
  */
 public final class VTaskPathDemo {
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws Throwable {
     System.out.println("VTaskPath Demo: Virtual Thread Concurrency");
     System.out.println("===========================================");
     System.out.println();
@@ -66,7 +66,7 @@ public final class VTaskPathDemo {
     System.out.println();
   }
 
-  private static void demoParallelExecution() {
+  private static void demoParallelExecution() throws Throwable {
     System.out.println("2. Parallel Execution with Par");
     System.out.println("   ----------------------------");
 
@@ -107,7 +107,7 @@ public final class VTaskPathDemo {
     System.out.println();
   }
 
-  private static void demoScopeAllSucceed() {
+  private static void demoScopeAllSucceed() throws Throwable {
     System.out.println("3. Structured Concurrency: Scope.allSucceed()");
     System.out.println("   ------------------------------------------");
 
@@ -128,7 +128,7 @@ public final class VTaskPathDemo {
     System.out.println();
   }
 
-  private static void demoScopeAnySucceed() {
+  private static void demoScopeAnySucceed() throws Throwable {
     System.out.println("4. Structured Concurrency: Scope.anySucceed()");
     System.out.println("   ------------------------------------------");
 
