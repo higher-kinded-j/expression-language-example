@@ -20,7 +20,7 @@ repositories {
 }
 
 dependencies {
-    implementation("io.github.higher-kinded-j:hkj-core:0.3.0")
-    annotationProcessor("io.github.higher-kinded-j:hkj-processor-plugins:0.3.0")
+    implementation("io.github.higher-kinded-j:hkj-core:0.3.4")
+    annotationProcessor("io.github.higher-kinded-j:hkj-processor-plugins:0.3.4")
 }
 
