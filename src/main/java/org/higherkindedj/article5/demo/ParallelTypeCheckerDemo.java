@@ -132,7 +132,7 @@ public final class ParallelTypeCheckerDemo {
 
           // Accumulate errors from both sides
           return left.ap(
-              right.map(rt -> lt -> checkMultiply(lt, rt)),
+              right.map(rt -> lt -> checkMultiply(lt, rt).run()),
               Semigroups.list()
           ).flatMap(v -> v);
         });
