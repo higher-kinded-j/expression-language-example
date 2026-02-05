@@ -18,6 +18,7 @@ import org.higherkindedj.hkt.vtask.VTask;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Demonstrates parallel type checking using VTask and Scope.
@@ -36,7 +37,7 @@ import java.util.List;
  */
 public final class ParallelTypeCheckerDemo {
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws Throwable {
     System.out.println("Parallel Type Checking Demo");
     System.out.println("===========================");
     System.out.println();
@@ -45,7 +46,7 @@ public final class ParallelTypeCheckerDemo {
     demoParallelSubExpressionChecking();
   }
 
-  private static void demoSequentialVsParallel() {
+  private static void demoSequentialVsParallel() throws Throwable {
     System.out.println("1. Sequential vs Parallel Type Checking");
     System.out.println("   ------------------------------------");
 
@@ -103,7 +104,7 @@ public final class ParallelTypeCheckerDemo {
     System.out.println();
   }
 
-  private static void demoParallelSubExpressionChecking() {
+  private static void demoParallelSubExpressionChecking() throws Throwable {
     System.out.println("2. Parallel Sub-Expression Checking with Error Accumulation");
     System.out.println("   --------------------------------------------------------");
 
@@ -131,10 +132,11 @@ public final class ParallelTypeCheckerDemo {
           Validated<List<TypeError>, Type> right = results.get(1);
 
           // Accumulate errors from both sides
-          return left.ap(
-              right.map(rt -> lt -> checkMultiply(lt, rt)),
-              Semigroups.list()
-          ).flatMap(v -> v);
+          Function<Type, Function<Type, Validated<List<TypeError>, Type>>> combiner =
+              rt -> lt -> checkMultiply(lt, rt).run();
+          Validated<List<TypeError>, Validated<List<TypeError>, Type>> combined =
+              left.ap(right.map(combiner), Semigroups.list());
+          return combined.flatMap(v -> v);
         });
 
     long start = System.currentTimeMillis();
