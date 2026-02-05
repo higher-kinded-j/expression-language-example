@@ -37,7 +37,7 @@ import java.util.function.Function;
  */
 public final class ParallelTypeCheckerDemo {
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws Throwable {
     System.out.println("Parallel Type Checking Demo");
     System.out.println("===========================");
     System.out.println();
@@ -46,7 +46,7 @@ public final class ParallelTypeCheckerDemo {
     demoParallelSubExpressionChecking();
   }
 
-  private static void demoSequentialVsParallel() {
+  private static void demoSequentialVsParallel() throws Throwable {
     System.out.println("1. Sequential vs Parallel Type Checking");
     System.out.println("   ------------------------------------");
 
@@ -104,7 +104,7 @@ public final class ParallelTypeCheckerDemo {
     System.out.println();
   }
 
-  private static void demoParallelSubExpressionChecking() {
+  private static void demoParallelSubExpressionChecking() throws Throwable {
     System.out.println("2. Parallel Sub-Expression Checking with Error Accumulation");
     System.out.println("   --------------------------------------------------------");
 
