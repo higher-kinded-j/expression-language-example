@@ -18,6 +18,7 @@ import org.higherkindedj.hkt.vtask.VTask;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Demonstrates parallel type checking using VTask and Scope.
@@ -131,10 +132,11 @@ public final class ParallelTypeCheckerDemo {
           Validated<List<TypeError>, Type> right = results.get(1);
 
           // Accumulate errors from both sides
-          return left.ap(
-              right.map(rt -> lt -> checkMultiply(lt, rt).run()),
-              Semigroups.list()
-          ).flatMap(v -> v);
+          Function<Type, Function<Type, Validated<List<TypeError>, Type>>> combiner =
+              rt -> lt -> checkMultiply(lt, rt).run();
+          Validated<List<TypeError>, Validated<List<TypeError>, Type>> combined =
+              left.ap(right.map(combiner), Semigroups.list());
+          return combined.flatMap(v -> v);
         });
 
     long start = System.currentTimeMillis();
