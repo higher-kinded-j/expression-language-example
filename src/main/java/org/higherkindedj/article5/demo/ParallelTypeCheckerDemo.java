@@ -241,7 +241,15 @@ public final class ParallelTypeCheckerDemo {
                 .formatted(op.symbol(), left, right)
         )), Semigroups.list());
       }
-      case EQ, NE -> Path.valid(Type.BOOL, Semigroups.list());
+      case EQ, NE -> {
+        if (left == right) {
+          yield Path.valid(Type.BOOL, Semigroups.list());
+        }
+        yield Path.invalid(List.of(new TypeError(
+            "Equality operator '%s' requires matching types, got %s and %s"
+                .formatted(op.symbol(), left, right)
+        )), Semigroups.list());
+      }
       case LT, LE, GT, GE -> {
         if (left == Type.INT && right == Type.INT) {
           yield Path.valid(Type.BOOL, Semigroups.list());
@@ -265,7 +273,7 @@ public final class ParallelTypeCheckerDemo {
 
   private static ValidationPath<List<TypeError>, Type> checkConditionalTypes(
       Type cond, Type then_, Type else_) {
-    java.util.ArrayList<TypeError> errors = new java.util.ArrayList<>();
+    List<TypeError> errors = new java.util.ArrayList<>();
 
     if (cond != Type.BOOL) {
       errors.add(new TypeError("Condition must be BOOL, got " + cond));
@@ -279,6 +287,6 @@ public final class ParallelTypeCheckerDemo {
     if (errors.isEmpty()) {
       return Path.valid(then_, Semigroups.list());
     }
-    return Path.invalid(errors, Semigroups.list());
+    return Path.invalid(List.copyOf(errors), Semigroups.list());
   }
 }

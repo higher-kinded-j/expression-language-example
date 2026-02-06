@@ -287,7 +287,17 @@ public final class EffectPathDemo {
                         .formatted(op.symbol(), left, right))),
             Semigroups.list());
       }
-      case EQ, NE -> Path.valid(Type.BOOL, Semigroups.list());
+      case EQ, NE -> {
+        if (left == right) {
+          yield Path.valid(Type.BOOL, Semigroups.list());
+        }
+        yield Path.invalid(
+            List.of(
+                new TypeError(
+                    "Equality operator '%s' requires matching types, got %s and %s"
+                        .formatted(op.symbol(), left, right))),
+            Semigroups.list());
+      }
       case LT, LE, GT, GE -> {
         if (left == Type.INT && right == Type.INT) {
           yield Path.valid(Type.BOOL, Semigroups.list());
