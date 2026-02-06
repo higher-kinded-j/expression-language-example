@@ -42,10 +42,49 @@
 ./gradlew :run -PmainClass=org.higherkindedj.article3.demo.OptimiserDemo
 ```
 
+## [Article 4](blog/article-4-traversals-rewrites.md)
+- **[Article4Demo](src/main/java/org/higherkindedj/article4/demo/Article4Demo.java)**: Runs all Article 4 demos
+```bash
+./gradlew :run -PmainClass=org.higherkindedj.article4.demo.Article4Demo
+```
+- **[TraversalDemo](src/main/java/org/higherkindedj/article4/demo/TraversalDemo.java)**: Traversals for expression trees
+```bash
+./gradlew :run -PmainClass=org.higherkindedj.article4.demo.TraversalDemo
+```
+- **[OptimiserDemo](src/main/java/org/higherkindedj/article4/demo/OptimiserDemo.java)**: Expression optimisation using traversals
+```bash
+./gradlew :run -PmainClass=org.higherkindedj.article4.demo.OptimiserDemo
+```
 
-
-
-
+## [Article 5](blog/article-5-effect-polymorphic-optics.md)
+- **[Article5Demo](src/main/java/org/higherkindedj/article5/demo/Article5Demo.java)**: Runs all Article 5 demos
+```bash
+./gradlew :run -PmainClass=org.higherkindedj.article5.demo.Article5Demo
+```
+- **[EffectPathDemo](src/main/java/org/higherkindedj/article5/demo/EffectPathDemo.java)**: The Effect Path API (MaybePath, EitherPath, ValidationPath)
+```bash
+./gradlew :run -PmainClass=org.higherkindedj.article5.demo.EffectPathDemo
+```
+- **[TypeCheckerDemo](src/main/java/org/higherkindedj/article5/demo/TypeCheckerDemo.java)**: Type checking with error accumulation using Validated
+```bash
+./gradlew :run -PmainClass=org.higherkindedj.article5.demo.TypeCheckerDemo
+```
+- **[InterpreterDemo](src/main/java/org/higherkindedj/article5/demo/InterpreterDemo.java)**: Expression interpretation using the State monad
+```bash
+./gradlew :run -PmainClass=org.higherkindedj.article5.demo.InterpreterDemo
+```
+- **[EffectPolymorphicDemo](src/main/java/org/higherkindedj/article5/demo/EffectPolymorphicDemo.java)**: Effect-polymorphic optics with modifyF
+```bash
+./gradlew :run -PmainClass=org.higherkindedj.article5.demo.EffectPolymorphicDemo
+```
+- **[VTaskPathDemo](src/main/java/org/higherkindedj/article5/demo/VTaskPathDemo.java)**: VTaskPath for virtual thread-based concurrency
+```bash
+./gradlew :run -PmainClass=org.higherkindedj.article5.demo.VTaskPathDemo
+```
+- **[ParallelTypeCheckerDemo](src/main/java/org/higherkindedj/article5/demo/ParallelTypeCheckerDemo.java)**: Parallel type checking using VTask and Scope
+```bash
+./gradlew :run -PmainClass=org.higherkindedj.article5.demo.ParallelTypeCheckerDemo
+```
 
 
 

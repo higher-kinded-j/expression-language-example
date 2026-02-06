@@ -18,7 +18,7 @@ package org.higherkindedj.article5.demo;
  */
 public final class Article5Demo {
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws Throwable {
     System.out.println("╔══════════════════════════════════════════════════════════════════╗");
     System.out.println("║     Article 5: The Effect Path API with Higher-Kinded-J          ║");
     System.out.println("║                 Functional Optics for Modern Java                ║");
@@ -48,6 +48,20 @@ public final class Article5Demo {
 
     // Run Effect Polymorphic demo with Higher-Kinded-J's Kind<F, A>
     EffectPolymorphicDemo.main(args);
+
+    System.out.println();
+    System.out.println("────────────────────────────────────────────────────────────────────");
+    System.out.println();
+
+    // Run VTaskPath demo with virtual thread concurrency
+    VTaskPathDemo.main(args);
+
+    System.out.println();
+    System.out.println("────────────────────────────────────────────────────────────────────");
+    System.out.println();
+
+    // Run Parallel Type Checker demo with concurrent validation
+    ParallelTypeCheckerDemo.main(args);
 
     System.out.println();
     System.out.println("════════════════════════════════════════════════════════════════════");
